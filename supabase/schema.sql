@@ -76,3 +76,25 @@ $$;
 
 revoke all on function public.consume_careeros_ai_quota(uuid, integer) from public, anon, authenticated;
 grant execute on function public.consume_careeros_ai_quota(uuid, integer) to service_role;
+
+
+-- Subscription metadata. Only the server-side service role may write it.
+create table if not exists public.subscriptions (
+  id bigint generated always as identity primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  razorpay_subscription_id text not null unique,
+  plan text not null check (plan in ('pro', 'career_plus')),
+  status text not null check (status in ('authenticated','active','halted','cancelled','completed','paused','pending','expired')),
+  current_start timestamptz,
+  current_end timestamptz,
+  updated_at timestamptz not null default now()
+);
+alter table public.subscriptions enable row level security;
+drop policy if exists "Users can read their own subscription" on public.subscriptions;
+create policy "Users can read their own subscription"
+  on public.subscriptions for select to authenticated
+  using ((select auth.uid()) = user_id);
+grant select on public.subscriptions to authenticated;
+revoke insert, update, delete on public.subscriptions from anon, authenticated;
+create index if not exists subscriptions_user_status_idx
+  on public.subscriptions (user_id, status, updated_at desc);
