@@ -25,7 +25,7 @@ Create a Google OAuth Web application in Google Cloud Console. Google OAuth cred
 
 In Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client ID:
 - Authorized JavaScript origin: https://careeros-intelligence.vercel.app
-- Authorized redirect URI: copy the exact Supabase callback URL shown in the Supabase Google provider panel. It normally looks like https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback.
+- Authorized redirect URI: https://wjjfnmpkjmaakgnsvxaz.supabase.co/auth/v1/callback.
 
 Paste the Google Client ID and Client Secret into Supabase → Authentication → Sign In / Providers → Google, enable Google, and save. Do not put the Google Client Secret in Vercel or browser code.
 
