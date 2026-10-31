@@ -20,6 +20,47 @@ function notify(message) {
     window.setTimeout(() => toast.classList.remove('show'), 3200);
   }
 }
+
+function installExportButton() {
+  const tools = document.querySelector('.auth-tools');
+  if (!tools || $('exportWorkspace')) return;
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.id = 'exportWorkspace';
+  button.className = 'btn';
+  button.textContent = 'Export data';
+  button.setAttribute('aria-label', 'Download a copy of your CareerOS workspace');
+  button.addEventListener('click', () => {
+    const workspace = window.CareerOSState?.get?.();
+    if (!workspace) {
+      notify('Workspace is not ready to export yet.');
+      return;
+    }
+    const payload = {
+      product: 'CareerOS',
+      formatVersion: 1,
+      exportedAt: new Date().toISOString(),
+      account: currentSession?.user?.email || null,
+      workspace
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'careeros-workspace-' + new Date().toISOString().slice(0, 10) + '.json';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    notify('Workspace export downloaded.');
+  });
+  tools.insertBefore(button, signIn || tools.firstChild);
+  const privacyNote = document.querySelector('#profile aside .notice');
+  if (privacyNote) {
+    privacyNote.textContent = 'CareerOS saves your workspace in this browser. When you sign in, it also syncs to your private account. Use Export data to keep your own JSON copy.';
+  }
+}
+
 function showSignedIn(session) {
   currentSession = session;
   if (session && session.user) {
@@ -36,6 +77,7 @@ function showSignedIn(session) {
     bannerText.textContent = 'Guest mode saves on this device. Sign in with Google to sync your workspace across devices.';
   }
 }
+
 async function syncWorkspace() {
   if (!supabase || !currentSession?.user || !window.CareerOSState) return;
   if (syncing) { syncAgain = true; return; }
@@ -64,6 +106,7 @@ async function syncWorkspace() {
     if (syncAgain) { syncAgain = false; scheduleSync(); }
   }
 }
+
 function scheduleSync() {
   if (!currentSession?.user || !supabase) return;
   window.clearTimeout(syncTimer);
@@ -114,11 +157,19 @@ signOut?.addEventListener('click', async () => {
     notify('Signed out. Your local workspace remains on this device.');
   }
 });
-window.CareerOSAuth = { getAccessToken: async () => { if (!supabase) return null; const result = await supabase.auth.getSession(); return result.data?.session?.access_token || null; } };
+
+window.CareerOSAuth = {
+  getAccessToken: async () => {
+    if (!supabase) return null;
+    const result = await supabase.auth.getSession();
+    return result.data?.session?.access_token || null;
+  }
+};
 window.addEventListener('careeros:state-changed', scheduleSync);
 
 (async function initAuth() {
   showSignedIn(null);
+  installExportButton();
   try {
     const response = await fetch('/api/config', { cache: 'no-store' });
     if (!response.ok) throw new Error('Supabase public configuration is missing.');
