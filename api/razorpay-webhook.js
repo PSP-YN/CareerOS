@@ -23,7 +23,7 @@ export default async function handler(req, res) {
     const statusMap = {
       'subscription.authenticated': 'authenticated', 'subscription.activated': 'active', 'subscription.charged': 'active',
       'subscription.pending': 'pending', 'subscription.halted': 'halted', 'subscription.cancelled': 'cancelled',
-      'subscription.completed': 'completed', 'subscription.paused': 'paused',
+      'subscription.completed': 'completed', 'subscription.expired': 'expired', 'subscription.paused': 'paused',
       'subscription.resumed': 'active'
     };
     const status = statusMap[event.event];
@@ -31,19 +31,29 @@ export default async function handler(req, res) {
     const userId = entity.notes?.supabase_user_id;
     const plan = entity.notes?.plan;
     if (!userId || !['pro', 'career_plus'].includes(plan)) return res.status(200).json({ received: true, ignored: true });
-    const row = {
-      user_id: userId, razorpay_subscription_id: entity.id, plan, status,
-      current_start: entity.current_start ? new Date(entity.current_start * 1000).toISOString() : null,
-      current_end: entity.current_end ? new Date(entity.current_end * 1000).toISOString() : null,
-      ...(status === 'cancelled' ? { cancel_at_cycle_end: false, cancellation_requested_at: null } : {}),
-      updated_at: new Date().toISOString()
-    };
-    const saved = await fetch(url + '/rest/v1/subscriptions?on_conflict=razorpay_subscription_id', {
+    const eventCreatedAt = Number(event.created_at);
+    if (!Number.isSafeInteger(eventCreatedAt) || eventCreatedAt <= 0) {
+      return res.status(400).end('Invalid event timestamp');
+    }
+    const saved = await fetch(url + '/rest/v1/rpc/upsert_careeros_subscription', {
       method: 'POST',
-      headers: { apikey: service, Authorization: 'Bearer ' + service, 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates' },
-      body: JSON.stringify(row)
+      headers: {
+        apikey: service,
+        Authorization: 'Bearer ' + service,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        p_user_id: userId,
+        p_razorpay_subscription_id: entity.id,
+        p_plan: plan,
+        p_status: status,
+        p_current_start: entity.current_start ? new Date(entity.current_start * 1000).toISOString() : null,
+        p_current_end: entity.current_end ? new Date(entity.current_end * 1000).toISOString() : null,
+        p_event_created_at: eventCreatedAt
+      })
     });
     if (!saved.ok) return res.status(503).end('Could not persist subscription event');
-    return res.status(200).json({ received: true });
+    const applied = await saved.json().catch(() => false);
+    return res.status(200).json({ received: true, stale: applied !== true });
   } catch { return res.status(400).end('Invalid webhook payload'); }
 }
