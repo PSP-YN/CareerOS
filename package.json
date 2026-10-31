@@ -1,0 +1,12 @@
+{
+  "name": "careeros",
+  "version": "1.0.0",
+  "private": false,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "check": "node --check ai.js && node --check api/coach.js"
+  }
+}
