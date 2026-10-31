@@ -11,6 +11,7 @@
 - [ ] Set GEMINI_API_KEY and test authenticated AI coaching and daily quota.
 - [ ] Test API failures, oversized payloads, expired sessions and quota exhaustion.
 - [x] Implement workspace JSON export and authenticated account deletion endpoint; [ ] test deletion end-to-end after configuring the server-side service key and Google OAuth.
+- [ ] Test Resume Studio save, text export, print-to-PDF and workspace JSON export with real user data.
 - [ ] Configure Razorpay test-mode monthly plans and webhook.
 - [ ] Test subscription activation, renewal, failed payment, cancellation, refund and webhook retries.
 - [ ] Add merchant identity, support contact, final privacy policy, terms and refund/cancellation terms.
