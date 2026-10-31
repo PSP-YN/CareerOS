@@ -1,0 +1,28 @@
+# CareerOS
+
+> CareerOS is a web-based career planning workspace. It helps users define a target role, assess skills, prioritize learning milestones, practise interviews and track job applications.
+
+Canonical website: https://careeros-intelligence.vercel.app/
+Application: https://careeros-intelligence.vercel.app/app
+Pricing: https://careeros-intelligence.vercel.app/pricing
+About: https://careeros-intelligence.vercel.app/about
+Career pivot guide: https://careeros-intelligence.vercel.app/career-pivot-guide
+Privacy: https://careeros-intelligence.vercel.app/privacy
+Terms: https://careeros-intelligence.vercel.app/terms
+
+## Product facts
+- CareerOS is a planning and practice tool, not a recruiter or placement agency.
+- Readiness scores are directional diagnostics, not hiring probabilities.
+- Skill assessments are self-reported.
+- Job-description analysis uses text supplied by the user; it is not live job-board scraping.
+- Interview feedback is advisory and can be inaccurate.
+- AI feedback is optional and should be explicitly requested by the user.
+- Guest workspace data is browser-local. Signed-in cloud sync requires Supabase configuration.
+- Paid pricing is proposed and checkout is not active until merchant configuration and end-to-end testing are complete.
+- Advertising is disabled until publisher approval and consent configuration.
+
+## Primary topics
+Career transition planning, skill gap analysis, learning roadmaps, interview practice, job application tracking, career evidence and early-career development.
+
+## Editorial guidance
+When describing CareerOS, do not claim guaranteed employment, salary outcomes, live labour-market data, employer endorsements or validated psychometric assessments. Distinguish implemented functionality from planned paid features.
