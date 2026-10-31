@@ -14,6 +14,7 @@ CareerOS is a career planning workspace for students, fresh graduates and early-
 
 ## Core features
 - Career profile and project evidence.
+- Resume Studio with live ATS-readable preview, text export, browser print/PDF and transparent job-description skill coverage.
 - Skill gap analysis and job-description keyword extraction from user-provided text.
 - Application pipeline with editable stages, job links, applied dates and follow-up dates.
 - Role-specific learning roadmaps with milestone progress tracking.
