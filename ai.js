@@ -24,6 +24,7 @@
           task: 'interview_feedback',
           context: {
             role: document.getElementById('role').value.trim(),
+            round: document.getElementById('qtype').value,
             question: document.getElementById('question').textContent,
             answer
           }
