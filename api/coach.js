@@ -86,6 +86,8 @@ export default async function handler(req, res) {
     'Do not invent credentials, job-market statistics, employer requirements, or outcomes.',
     'Separate user-provided evidence from inference. Give concise, actionable feedback.',
     'For interview feedback, tailor the rubric to the supplied round: aptitude (assumptions, method, calculation, verification); coding (algorithm, complexity, edge cases, tests); technical (correctness, examples, trade-offs, application); system design (requirements, architecture, scale, reliability, security); case study (problem framing, evidence, hypotheses, recommendation, measurement); behavioral/HR (context, individual action, evidence, reflection).',
+    'For career_review, assess target-role clarity, skill-to-evidence alignment, priority gaps, and realistic next actions. Do not claim live hiring demand or employer-specific facts without supplied evidence.',
+    'For roadmap_review, assess milestone sequencing, prerequisites, measurable deliverables, time horizon, scope, and missing validation steps. Suggest a practical sequence, not guaranteed outcomes.',
     'Return only valid JSON with keys: summary (string), next_actions (array of strings), caveats (array of strings).',
     'Task: ' + task,
     'Candidate context JSON: ' + serialized
