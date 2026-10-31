@@ -6,7 +6,7 @@ import { spawnSync } from 'node:child_process';
 const required = [
   'index.html','app.html','styles.css','logo.svg','favicon.svg','auth.js','ai.js','ads.js','billing.js',
   'api/config.js','api/coach.js','api/create-subscription.js','api/verify-subscription.js',
-  'api/razorpay-webhook.js','supabase/schema.sql','sitemap.xml','llms.txt','robots.txt','README.md','vercel.json'
+  'api/razorpay-webhook.js','api/delete-account.js','api/cancel-subscription.js','supabase/schema.sql','sitemap.xml','llms.txt','robots.txt','README.md','vercel.json'
 ];
 for (const file of required) if (!existsSync(file)) throw new Error('Missing required file: ' + file);
 
@@ -14,8 +14,20 @@ const app = readFileSync('app.html','utf8');
 const ids = [...app.matchAll(/\bid="([^"]+)"/g)].map(m => m[1]);
 const duplicates = ids.filter((id,i) => ids.indexOf(id) !== i);
 if (duplicates.length) throw new Error('Duplicate app HTML IDs: ' + [...new Set(duplicates)].join(', '));
-for (const id of ['overview','profile','skills','roadmap','interview','applications','saveprofile','analyzejd','evaluate','addapp','signinGoogle','signout']) {
+for (const id of ['overview','profile','skills','roadmap','interview','applications','saveprofile','analyzejd','evaluate','addapp','signinGoogle','signout','roleTemplate','applyRoleTemplate','qtype','jobUrl','appliedAt','followUp','appSummary']) {
   if (!ids.includes(id)) throw new Error('Missing app control: ' + id);
+}
+
+const interview = ['aptitude','coding','technical','system_design','case_study','behavioral','hr'];
+for (const round of interview) if (!app.includes(round + ':') && !app.includes('value="' + round + '"')) {
+  throw new Error('Missing interview round: ' + round);
+}
+for (const role of ['ai_ml','full_stack','backend','frontend','data_analyst','cybersecurity','product']) {
+  if (!app.includes(role + ':')) throw new Error('Missing career path template: ' + role);
+}
+for (const marker of ['data-status','followUp','cancel_at_cycle_end']) {
+  const source = marker === 'cancel_at_cycle_end' ? readFileSync('supabase/schema.sql','utf8') : app;
+  if (!source.includes(marker)) throw new Error('Missing application or subscription feature: ' + marker);
 }
 
 const landing = readFileSync('index.html','utf8');
@@ -40,7 +52,7 @@ try {
 
 const jsFiles = [
   'auth.js','ai.js','ads.js','billing.js','api/config.js','api/coach.js',
-  'api/create-subscription.js','api/verify-subscription.js','api/razorpay-webhook.js'
+  'api/create-subscription.js','api/verify-subscription.js','api/razorpay-webhook.js','api/delete-account.js','api/cancel-subscription.js'
 ];
 for (const file of jsFiles) {
   const check = spawnSync(process.execPath,['--check',file],{encoding:'utf8'});
@@ -54,4 +66,16 @@ const coach = readFileSync('api/coach.js','utf8');
 if (!coach.includes('GEMINI_API_KEY') || !coach.includes('SUPABASE_SERVICE_ROLE_KEY') || !coach.includes('MAX_CONTEXT_CHARS')) {
   throw new Error('AI API guardrails are incomplete.');
 }
-console.log('CareerOS checks passed: app controls, SEO, inline/external JS syntax, Supabase RLS, AI quota and payment endpoints.');
+const deleteApi = readFileSync('api/delete-account.js','utf8');
+if (!deleteApi.includes('DELETE MY CAREEROS ACCOUNT') || !deleteApi.includes('claims.iat') || !deleteApi.includes('/auth/v1/admin/users/')) {
+  throw new Error('Account deletion safeguards are incomplete.');
+}
+const cancelApi = readFileSync('api/cancel-subscription.js','utf8');
+if (!cancelApi.includes('cancel_at_cycle_end: true') || !cancelApi.includes('SUPABASE_SERVICE_ROLE_KEY')) {
+  throw new Error('Subscription cancellation safeguards are incomplete.');
+}
+const billing = readFileSync('billing.js','utf8');
+if (!billing.includes('/api/cancel-subscription') || !billing.includes('cancel_at_cycle_end')) {
+  throw new Error('Self-service billing management is incomplete.');
+}
+console.log('CareerOS checks passed: application controls, role templates, interview rounds, SEO, JavaScript syntax, Supabase RLS, AI quotas, account deletion and subscription management.');
