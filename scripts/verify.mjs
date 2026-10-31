@@ -23,7 +23,7 @@ for (const round of interview) if (!app.includes(round + ':') && !app.includes('
   throw new Error('Missing interview round: ' + round);
 }
 for (const role of ['ai_ml','full_stack','backend','frontend','data_analyst','cybersecurity','product']) {
-  if (!app.includes(role + ':')) throw new Error('Missing career path template: ' + role);
+  if (!app.includes('"' + role + '":') && !app.includes('value="' + role + '"')) throw new Error('Missing career path template: ' + role);
 }
 for (const marker of ['data-status','followUp','cancel_at_cycle_end']) {
   const source = marker === 'cancel_at_cycle_end' ? readFileSync('supabase/schema.sql','utf8') : app;
