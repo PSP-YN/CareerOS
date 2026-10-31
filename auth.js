@@ -160,8 +160,8 @@ function mergeWorkspace(cloud, local) {
     item => item.id || item.company + '|' + item.role + '|' + item.status);
   return {
     ...c, ...l, profile,
-    skills: mergeByName(c.skills, localSkills),
-    done,
+    skills: skillsChanged ? mergeByName(c.skills, localSkills) : (Array.isArray(c.skills) ? c.skills : localSkills),
+    done: progressChanged ? done : (cloudDone.length ? cloudDone : localDone),
     answers,
     apps,
     sessions: Math.max(Number(c.sessions) || 0, Number(l.sessions) || 0)
