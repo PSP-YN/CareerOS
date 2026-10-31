@@ -27,7 +27,7 @@ export default async function handler(req, res) {
       method: 'POST',
       headers: { Authorization: 'Basic ' + credentials, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        plan_id: selected.id, total_count: 12, quantity: 1, customer_notify: 1,
+        plan_id: selected.id, total_count: 120, quantity: 1, customer_notify: 1,
         notes: { supabase_user_id: user.id, plan, product: 'CareerOS' }
       })
     });
