@@ -20,7 +20,7 @@ CareerOS is a career planning workspace for students, fresh graduates and early-
 - Editable templates for AI/ML, full-stack, backend, frontend, data analyst, cybersecurity and product roles.
 - Seven interview rounds: aptitude, coding, technical, system design, case study, behavioral and HR, each with a dedicated question bank and local practice rubric.
 - Deterministic interview feedback.
-- Optional Gemini coaching with explicit opt-in, authenticated requests and a Postgres-enforced daily quota.
+- Optional Gemini interview, career-direction and roadmap reviews with separate explicit consent, authenticated requests and a Postgres-enforced daily quota.
 - Guest mode with browser-local storage, JSON export, guest-to-cloud data merge and account deletion endpoint (account deletion requires the server-side service key and recent sign-in).
 - Supabase Google OAuth and per-user workspace sync (requires the Google provider to be enabled and environment setup).
 - Razorpay subscription integration with signed webhooks, server-side entitlements and self-service end-of-cycle cancellation (requires merchant account, plan IDs, webhook and test-mode verification).
