@@ -14,7 +14,7 @@ const app = readFileSync('app.html','utf8');
 const ids = [...app.matchAll(/\bid="([^"]+)"/g)].map(m => m[1]);
 const duplicates = ids.filter((id,i) => ids.indexOf(id) !== i);
 if (duplicates.length) throw new Error('Duplicate app HTML IDs: ' + [...new Set(duplicates)].join(', '));
-for (const id of ['overview','profile','skills','roadmap','interview','applications','saveprofile','analyzejd','evaluate','addapp','signinGoogle','signout','roleTemplate','applyRoleTemplate','qtype','jobUrl','appliedAt','followUp','appSummary']) {
+for (const id of ['overview','profile','skills','roadmap','interview','applications','saveprofile','analyzejd','evaluate','addapp','signinGoogle','signout','roleTemplate','applyRoleTemplate','qtype','jobUrl','appliedAt','followUp','appSummary','careerAiConsent','careerReview','careerReviewFeedback','roadmapAiConsent','roadmapReview','roadmapReviewFeedback']) {
   if (!ids.includes(id)) throw new Error('Missing app control: ' + id);
 }
 
@@ -59,11 +59,11 @@ for (const file of jsFiles) {
   if (check.status !== 0) throw new Error(file + ': ' + check.stderr);
 }
 const schema = readFileSync('supabase/schema.sql','utf8');
-for (const marker of ['enable row level security','consume_careeros_ai_quota','service_role','subscriptions']) {
+for (const marker of ['enable row level security','consume_careeros_ai_quota','upsert_careeros_subscription','provider_event_created_at','service_role','subscriptions']) {
   if (!schema.includes(marker)) throw new Error('Missing database security control: '+marker);
 }
 const coach = readFileSync('api/coach.js','utf8');
-if (!coach.includes('GEMINI_API_KEY') || !coach.includes('SUPABASE_SERVICE_ROLE_KEY') || !coach.includes('MAX_CONTEXT_CHARS')) {
+if (!coach.includes('GEMINI_API_KEY') || !coach.includes('SUPABASE_SERVICE_ROLE_KEY') || !coach.includes('MAX_CONTEXT_CHARS') || !coach.includes('career_review') || !coach.includes('roadmap_review')) {
   throw new Error('AI API guardrails are incomplete.');
 }
 const deleteApi = readFileSync('api/delete-account.js','utf8');
