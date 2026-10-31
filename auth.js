@@ -117,7 +117,9 @@ function mergeWorkspace(cloud, local) {
   const localDone = Array.isArray(l.done) ? l.done : [];
   const progressChanged = localDone.length !== defaultDone.length ||
     defaultDone.some((value,i) => !!localDone[i] !== value);
-  const localHasWork = localProfileEdited || skillsChanged || progressChanged ||
+  const localResume = l.resume && typeof l.resume === 'object' ? l.resume : {};
+  const localResumeEdited = Object.values(localResume).some(value => String(value || '').trim());
+  const localHasWork = localProfileEdited || skillsChanged || progressChanged || localResumeEdited ||
     (Array.isArray(l.apps) && l.apps.length > 0) ||
     (Array.isArray(l.answers) && l.answers.length > 0) ||
     Number(l.sessions) > 0;
@@ -166,6 +168,7 @@ function mergeWorkspace(cloud, local) {
   return {
     ...c, ...l, profile,
     skills: skillsChanged ? mergeByName(c.skills, localSkills) : (Array.isArray(c.skills) ? c.skills : localSkills),
+    resume: { ...(c.resume && typeof c.resume === 'object' ? c.resume : {}), ...(localResumeEdited ? localResume : {}) },
     done: progressChanged ? done : (cloudDone.length ? cloudDone : localDone),
     answers,
     apps,
