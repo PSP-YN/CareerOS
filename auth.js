@@ -154,6 +154,8 @@ function mergeWorkspace(cloud, local) {
   };
   const cloudProfile = c.profile && typeof c.profile === 'object' ? c.profile : {};
   const profile = { ...cloudProfile };
+  const resume = { ...(c.resume && typeof c.resume === 'object' ? c.resume : {}) };
+  for (const [key,value] of Object.entries(localResume)) if (String(value || '').trim()) resume[key] = value;
   if (localProfile.role && localProfile.role !== 'AI / ML Engineer') profile.role = localProfile.role;
   if (localProfile.experience && localProfile.experience !== 'Student / Fresher') profile.experience = localProfile.experience;
   if (localProfile.timeline && localProfile.timeline !== '6 months') profile.timeline = localProfile.timeline;
@@ -168,7 +170,7 @@ function mergeWorkspace(cloud, local) {
   return {
     ...c, ...l, profile,
     skills: skillsChanged ? mergeByName(c.skills, localSkills) : (Array.isArray(c.skills) ? c.skills : localSkills),
-    resume: { ...(c.resume && typeof c.resume === 'object' ? c.resume : {}), ...(localResumeEdited ? localResume : {}) },
+    resume,
     done: progressChanged ? done : (cloudDone.length ? cloudDone : localDone),
     answers,
     apps,
