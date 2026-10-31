@@ -26,7 +26,7 @@ for (const role of ['ai_ml','full_stack','backend','frontend','data_analyst','cy
   if (!app.includes('"' + role + '":') && !app.includes('value="' + role + '"')) throw new Error('Missing career path template: ' + role);
 }
 for (const marker of ['data-status','followUp','cancel_at_cycle_end','resume-document']) {
-  const source = marker === 'cancel_at_cycle_end' ? readFileSync('supabase/schema.sql','utf8') : app;
+  const source = marker === 'cancel_at_cycle_end' ? readFileSync('supabase/schema.sql','utf8') : marker === 'resume-document' ? readFileSync('styles.css','utf8') : app;
   if (!source.includes(marker)) throw new Error('Missing application or subscription feature: ' + marker);
 }
 
