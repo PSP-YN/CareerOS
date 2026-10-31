@@ -1,6 +1,6 @@
 # CareerOS
 
-> CareerOS is a web-based career planning workspace. It helps users define a target role, assess skills, prioritize learning milestones, practise interviews and track job applications.
+> CareerOS is a web-based career planning workspace. It helps users choose a career path, assess skill gaps, build role-specific learning roadmaps, create an evidence-led resume, practise seven interview rounds and track job applications.
 
 Canonical website: https://careeros-intelligence.vercel.app/
 Application: https://careeros-intelligence.vercel.app/app
@@ -16,8 +16,12 @@ Terms: https://careeros-intelligence.vercel.app/terms
 - Skill assessments are self-reported.
 - Job-description analysis uses text supplied by the user; it is not live job-board scraping.
 - Interview feedback is advisory and can be inaccurate.
+- Interview practice covers aptitude, coding, technical fundamentals, system design, case studies, behavioral and HR rounds.
+- Resume Studio provides a live preview, text export, browser print/PDF and a self-assessed job-description skill coverage estimate; it does not claim to produce a validated ATS score.
+- Optional Gemini interview, career and roadmap reviews each require explicit user consent.
 - AI feedback is optional and should be explicitly requested by the user.
-- Guest workspace data is browser-local. Signed-in cloud sync requires Supabase configuration.
+- Guest workspace data is browser-local. Signed-in cloud sync requires Supabase Google OAuth to be enabled and environment configuration.
+- Account deletion requires recent sign-in and server-side Supabase credentials; guest browser storage must be cleared separately.
 - Paid pricing is proposed and checkout is not active until merchant configuration and end-to-end testing are complete.
 - Advertising is disabled until publisher approval and consent configuration.
 
