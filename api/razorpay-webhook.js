@@ -21,8 +21,8 @@ export default async function handler(req, res) {
     const entity = event.payload?.subscription?.entity;
     if (!entity?.id) return res.status(200).json({ received: true, ignored: true });
     const statusMap = {
-      'subscription.activated': 'active', 'subscription.charged': 'active',
-      'subscription.halted': 'halted', 'subscription.cancelled': 'cancelled',
+      'subscription.authenticated': 'authenticated', 'subscription.activated': 'active', 'subscription.charged': 'active',
+      'subscription.pending': 'pending', 'subscription.halted': 'halted', 'subscription.cancelled': 'cancelled',
       'subscription.completed': 'completed', 'subscription.paused': 'paused',
       'subscription.resumed': 'active'
     };
