@@ -7,15 +7,16 @@ export default function handler(req, res) {
   }
   const supabaseUrl = process.env.SUPABASE_URL || '';
   const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || '';
-  if (!supabaseUrl || !supabaseAnonKey) return res.status(503).json({ error: 'Supabase is not configured.' });
-  try {
-    const parsed = new URL(supabaseUrl);
-    if (parsed.protocol !== 'https:' || !parsed.hostname.endsWith('.supabase.co')) {
-      return res.status(500).json({ error: 'Invalid Supabase project URL.' });
-    }
-  } catch { return res.status(500).json({ error: 'Invalid Supabase project URL.' }); }
-  const billingEnabled = !!(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET &&
-    process.env.RAZORPAY_PRO_PLAN_ID && process.env.RAZORPAY_PLUS_PLAN_ID);
+  if (supabaseUrl) {
+    try {
+      const parsed = new URL(supabaseUrl);
+      if (parsed.protocol !== 'https:' || !parsed.hostname.endsWith('.supabase.co')) {
+        return res.status(500).json({ error: 'Invalid Supabase project URL.' });
+      }
+    } catch { return res.status(500).json({ error: 'Invalid Supabase project URL.' }); }
+  }
+  const billingEnabled = !!(supabaseUrl && supabaseAnonKey && process.env.RAZORPAY_KEY_ID &&
+    process.env.RAZORPAY_KEY_SECRET && process.env.RAZORPAY_PRO_PLAN_ID && process.env.RAZORPAY_PLUS_PLAN_ID);
   const adsenseClientId = process.env.ADSENSE_CLIENT_ID || '';
   const adsenseHomeSlotId = process.env.ADSENSE_HOME_SLOT_ID || '';
   const adsenseGuideSlotId = process.env.ADSENSE_GUIDE_SLOT_ID || '';
