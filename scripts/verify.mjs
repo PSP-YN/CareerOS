@@ -33,6 +33,9 @@ for (const id of ['overview','profile','resume','skills','roadmap','interview','
   if (!ids.includes(id)) throw new Error('Missing app control: ' + id);
 }
 
+if (!app.includes("$('roadpct').textContent=P.length?Math.round(n/P.length*100)+'%':'—'")) {
+  throw new Error('An empty roadmap must not display NaN progress.');
+}
 if (!app.includes('data-remove-skill') || !app.includes('Skill removed from your assessment.')) {
   throw new Error('Skill assessment is missing the remove-skill action.');
 }
