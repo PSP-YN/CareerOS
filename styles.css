@@ -34,3 +34,8 @@ input:focus,textarea:focus,select:focus{background:#fff;border-color:#78b99a;box
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
+
+/* Skill assessment rows include an explicit remove action. */
+.skill{grid-template-columns:minmax(0,1fr) minmax(110px,1.35fr) 105px auto}
+.skill .btn{padding:6px 9px;font-size:11px}
+@media(max-width:720px){.skill{grid-template-columns:minmax(0,1fr) auto}.skill input{grid-column:1/-1;grid-row:2}.skill small{grid-column:1;grid-row:3}.skill .btn{grid-column:2;grid-row:3;justify-self:end}}
