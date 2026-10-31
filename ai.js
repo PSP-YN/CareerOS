@@ -29,8 +29,8 @@
           }
         })
       });
-      if (!response.ok) throw new Error(response.status === 503 ? 'Gemini is not configured on this deployment. The local feedback remains available.' : 'AI feedback is temporarily unavailable.');
-      const payload = await response.json();
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || 'AI feedback is temporarily unavailable.');
       const result = payload.result || {};
       const actions = Array.isArray(result.next_actions) ? result.next_actions : [];
       const summary = escapeHTML(result.summary || 'No additional summary returned.');
