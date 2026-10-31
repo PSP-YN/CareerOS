@@ -14,7 +14,9 @@
     button.disabled = true;
     button.textContent = 'Asking AI coach…';
     try {
-      const token = await window.CareerOSAuth?.getAccessToken();\n      if (!token) throw new Error('Sign in with Google to use the optional AI coach.');\n      const response = await fetch('/api/coach', {
+      const token = await window.CareerOSAuth?.getAccessToken();
+      if (!token) throw new Error('Sign in with Google to use the optional AI coach.');
+      const response = await fetch('/api/coach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
         cache: 'no-store',
