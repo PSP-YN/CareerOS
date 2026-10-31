@@ -14,7 +14,7 @@ const app = readFileSync('app.html','utf8');
 const ids = [...app.matchAll(/\bid="([^"]+)"/g)].map(m => m[1]);
 const duplicates = ids.filter((id,i) => ids.indexOf(id) !== i);
 if (duplicates.length) throw new Error('Duplicate app HTML IDs: ' + [...new Set(duplicates)].join(', '));
-for (const id of ['overview','profile','skills','roadmap','interview','applications','saveprofile','analyzejd','evaluate','addapp','signinGoogle','signout','roleTemplate','applyRoleTemplate','qtype','jobUrl','appliedAt','followUp','appSummary','careerAiConsent','careerReview','careerReviewFeedback','roadmapAiConsent','roadmapReview','roadmapReviewFeedback']) {
+for (const id of ['overview','profile','resume','skills','roadmap','interview','applications','saveprofile','analyzejd','evaluate','addapp','signinGoogle','signout','roleTemplate','applyRoleTemplate','qtype','jobUrl','appliedAt','followUp','appSummary','careerAiConsent','careerReview','careerReviewFeedback','roadmapAiConsent','roadmapReview','roadmapReviewFeedback','resumeName','resumeEmail','resumeHeadline','resumeSummary','resumeEducation','resumeExperience','resumeProjects','resumeCertifications','resumeLinks','resumePreview','resumeMatch','saveResume','downloadResume','printResume']) {
   if (!ids.includes(id)) throw new Error('Missing app control: ' + id);
 }
 
@@ -25,7 +25,7 @@ for (const round of interview) if (!app.includes(round + ':') && !app.includes('
 for (const role of ['ai_ml','full_stack','backend','frontend','data_analyst','cybersecurity','product']) {
   if (!app.includes('"' + role + '":') && !app.includes('value="' + role + '"')) throw new Error('Missing career path template: ' + role);
 }
-for (const marker of ['data-status','followUp','cancel_at_cycle_end']) {
+for (const marker of ['data-status','followUp','cancel_at_cycle_end','resume-document']) {
   const source = marker === 'cancel_at_cycle_end' ? readFileSync('supabase/schema.sql','utf8') : app;
   if (!source.includes(marker)) throw new Error('Missing application or subscription feature: ' + marker);
 }
