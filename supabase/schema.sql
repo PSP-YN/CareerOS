@@ -89,6 +89,7 @@ create table if not exists public.subscriptions (
   current_end timestamptz,
   cancel_at_cycle_end boolean not null default false,
   cancellation_requested_at timestamptz,
+  provider_event_created_at bigint not null default 0,
   updated_at timestamptz not null default now()
 );
 alter table public.subscriptions enable row level security;
@@ -101,6 +102,70 @@ revoke insert, update, delete on public.subscriptions from anon, authenticated;
 create index if not exists subscriptions_user_status_idx
   on public.subscriptions (user_id, status, updated_at desc);
 
+alter table public.subscriptions
+  add column if not exists provider_event_created_at bigint not null default 0;
+
+-- Apply only newer provider events so delayed webhook deliveries cannot roll back subscription state.
+create or replace function public.upsert_careeros_subscription(
+  p_user_id uuid,
+  p_razorpay_subscription_id text,
+  p_plan text,
+  p_status text,
+  p_current_start timestamptz,
+  p_current_end timestamptz,
+  p_event_created_at bigint
+) returns boolean
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $
+declare
+  did_update boolean := false;
+begin
+  if p_user_id is null
+     or p_razorpay_subscription_id is null
+     or p_razorpay_subscription_id = ''
+     or p_plan not in ('pro','career_plus')
+     or p_status not in ('authenticated','active','halted','cancelled','completed','paused','pending','expired')
+     or p_event_created_at is null
+     or p_event_created_at < 0 then
+    return false;
+  end if;
+
+  insert into public.subscriptions (
+    user_id, razorpay_subscription_id, plan, status,
+    current_start, current_end, provider_event_created_at,
+    cancel_at_cycle_end, cancellation_requested_at, updated_at
+  ) values (
+    p_user_id, p_razorpay_subscription_id, p_plan, p_status,
+    p_current_start, p_current_end, p_event_created_at,
+    false, null, now()
+  )
+  on conflict (razorpay_subscription_id) do update set
+    user_id = excluded.user_id,
+    plan = excluded.plan,
+    status = excluded.status,
+    current_start = excluded.current_start,
+    current_end = excluded.current_end,
+    provider_event_created_at = excluded.provider_event_created_at,
+    cancel_at_cycle_end = case
+      when excluded.status = 'cancelled' then false
+      else public.subscriptions.cancel_at_cycle_end
+    end,
+    cancellation_requested_at = case
+      when excluded.status = 'cancelled' then null
+      else public.subscriptions.cancellation_requested_at
+    end,
+    updated_at = now()
+  where excluded.provider_event_created_at > public.subscriptions.provider_event_created_at
+  returning true into did_update;
+
+  return coalesce(did_update, false);
+end;
+$;
+
+revoke all on function public.upsert_careeros_subscription(uuid,text,text,text,timestamptz,timestamptz,bigint) from public, anon, authenticated;
+grant execute on function public.upsert_careeros_subscription(uuid,text,text,text,timestamptz,timestamptz,bigint) to service_role;
 
 -- Subscription cancellation scheduling metadata for self-service billing management.
 alter table public.subscriptions add column if not exists cancel_at_cycle_end boolean not null default false;
