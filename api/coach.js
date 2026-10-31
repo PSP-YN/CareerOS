@@ -43,6 +43,10 @@ export default async function handler(req, res) {
     return res.status(413).json({ error: 'Context is too large. Shorten the supplied text.' });
   }
 
+  if (!process.env.GEMINI_API_KEY) {
+    return res.status(503).json({ error: 'Gemini is not configured. Local interview feedback remains available.' });
+  }
+
   // Determine paid entitlements only from webhook-confirmed active subscriptions.
   let dailyLimit = 10;
   try {
@@ -74,10 +78,6 @@ export default async function handler(req, res) {
     if (await quota.json() !== true) return res.status(429).json({ error: 'Daily AI coaching limit reached. Try again tomorrow.' });
   } catch {
     return res.status(503).json({ error: 'AI usage quota could not be checked.' });
-  }
-
-  if (!process.env.GEMINI_API_KEY) {
-    return res.status(503).json({ error: 'Gemini is not configured. Local interview feedback remains available.' });
   }
 
   const prompt = [
