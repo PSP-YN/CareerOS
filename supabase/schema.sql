@@ -87,6 +87,8 @@ create table if not exists public.subscriptions (
   status text not null check (status in ('authenticated','active','halted','cancelled','completed','paused','pending','expired')),
   current_start timestamptz,
   current_end timestamptz,
+  cancel_at_cycle_end boolean not null default false,
+  cancellation_requested_at timestamptz,
   updated_at timestamptz not null default now()
 );
 alter table public.subscriptions enable row level security;
@@ -98,3 +100,8 @@ grant select on public.subscriptions to authenticated;
 revoke insert, update, delete on public.subscriptions from anon, authenticated;
 create index if not exists subscriptions_user_status_idx
   on public.subscriptions (user_id, status, updated_at desc);
+
+
+-- Subscription cancellation scheduling metadata for self-service billing management.
+alter table public.subscriptions add column if not exists cancel_at_cycle_end boolean not null default false;
+alter table public.subscriptions add column if not exists cancellation_requested_at timestamptz;
