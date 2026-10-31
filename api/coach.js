@@ -43,6 +43,22 @@ export default async function handler(req, res) {
     return res.status(413).json({ error: 'Context is too large. Shorten the supplied text.' });
   }
 
+  // Determine paid entitlements only from webhook-confirmed active subscriptions.
+  let dailyLimit = 10;
+  try {
+    const planResponse = await fetch(
+      supabaseUrl + '/rest/v1/subscriptions?user_id=eq.' + encodeURIComponent(user.id) +
+      '&status=eq.active&select=plan&order=updated_at.desc&limit=1',
+      { headers: { apikey: serviceKey, Authorization: 'Bearer ' + serviceKey } }
+    );
+    if (!planResponse.ok) return res.status(503).json({ error: 'Subscription entitlements could not be checked.' });
+    const active = await planResponse.json();
+    if (active?.[0]?.plan === 'pro') dailyLimit = 50;
+    if (active?.[0]?.plan === 'career_plus') dailyLimit = 150;
+  } catch {
+    return res.status(503).json({ error: 'Subscription entitlements could not be checked.' });
+  }
+
   // Atomic daily quota is enforced in Postgres; the service-role key never leaves this function.
   try {
     const quota = await fetch(supabaseUrl + '/rest/v1/rpc/consume_careeros_ai_quota', {
@@ -52,7 +68,7 @@ export default async function handler(req, res) {
         Authorization: 'Bearer ' + serviceKey,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ p_user_id: user.id, p_daily_limit: 10 })
+      body: JSON.stringify({ p_user_id: user.id, p_daily_limit: dailyLimit })
     });
     if (!quota.ok) return res.status(503).json({ error: 'AI usage quota is not configured. Run the supplied Supabase schema migration.' });
     if (await quota.json() !== true) return res.status(429).json({ error: 'Daily AI coaching limit reached. Try again tomorrow.' });
@@ -110,7 +126,7 @@ export default async function handler(req, res) {
         caveats: Array.isArray(result.caveats) ? result.caveats.filter(x => typeof x === 'string').slice(0, 4).map(x => x.slice(0, 300)) : []
       },
       model: 'gemini-2.5-flash',
-      quota: { dailyLimit: 10 }
+      quota: { dailyLimit }
     });
   } catch {
     return res.status(502).json({ error: 'AI service timed out or is unavailable. Try again later.' });
