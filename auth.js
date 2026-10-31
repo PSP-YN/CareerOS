@@ -151,7 +151,12 @@ function mergeWorkspace(cloud, local) {
     return [...map.values()];
   };
   const cloudProfile = c.profile && typeof c.profile === 'object' ? c.profile : {};
-  const profile = localProfileEdited ? { ...cloudProfile, ...localProfile } : { ...cloudProfile };
+  const profile = { ...cloudProfile };
+  if (localProfile.role && localProfile.role !== 'AI / ML Engineer') profile.role = localProfile.role;
+  if (localProfile.experience && localProfile.experience !== 'Student / Fresher') profile.experience = localProfile.experience;
+  if (localProfile.timeline && localProfile.timeline !== '6 months') profile.timeline = localProfile.timeline;
+  if (String(localProfile.objective || '').trim()) profile.objective = localProfile.objective;
+  if (String(localProfile.evidence || '').trim()) profile.evidence = localProfile.evidence;
   const cloudDone = Array.isArray(c.done) ? c.done : [];
   const done = Array.from({ length: Math.max(cloudDone.length, localDone.length) }, (_,i) => !!cloudDone[i] || !!localDone[i]);
   const answers = unique([...(Array.isArray(c.answers) ? c.answers : []), ...(Array.isArray(l.answers) ? l.answers : [])],
