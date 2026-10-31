@@ -48,6 +48,13 @@ create table if not exists public.ai_usage_daily (
   primary key (user_id, usage_date)
 );
 alter table public.ai_usage_daily enable row level security;
+drop policy if exists "No direct user access to AI usage counters" on public.ai_usage_daily;
+create policy "No direct user access to AI usage counters"
+  on public.ai_usage_daily
+  for all
+  to anon, authenticated
+  using (false)
+  with check (false);
 revoke all on public.ai_usage_daily from anon, authenticated;
 
 create or replace function public.consume_careeros_ai_quota(
