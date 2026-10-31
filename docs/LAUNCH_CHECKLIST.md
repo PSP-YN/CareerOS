@@ -5,12 +5,12 @@
 - [ ] Set SUPABASE_URL and SUPABASE_ANON_KEY in Vercel.
 - [ ] Configure Google OAuth provider in Supabase and Google Cloud Console.
 - [ ] Set Supabase Site URL and allowed redirects to the canonical domain.
-- [ ] Test sign-in, sign-out, token refresh and workspace sync.
+- [ ] Enable Google OAuth in Supabase, then test sign-in, sign-out, token refresh and guest-to-cloud workspace merge.
 - [ ] Test RLS with two accounts and verify cross-account reads/writes fail.
 - [ ] Set SUPABASE_SERVICE_ROLE_KEY in Vercel only; never expose it to browser code.
 - [ ] Set GEMINI_API_KEY and test authenticated AI coaching and daily quota.
 - [ ] Test API failures, oversized payloads, expired sessions and quota exhaustion.
-- [ ] Complete data export and account deletion workflows before public commercial use.
+- [x] Implement workspace JSON export and authenticated account deletion endpoint; [ ] test deletion end-to-end after configuring the server-side service key and Google OAuth.
 - [ ] Configure Razorpay test-mode monthly plans and webhook.
 - [ ] Test subscription activation, renewal, failed payment, cancellation, refund and webhook retries.
 - [ ] Add merchant identity, support contact, final privacy policy, terms and refund/cancellation terms.
