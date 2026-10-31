@@ -95,6 +95,37 @@ function showSignedIn(session) {
 function mergeWorkspace(cloud, local) {
   const c = cloud && typeof cloud === 'object' ? cloud : {};
   const l = local && typeof local === 'object' ? local : {};
+  const defaultSkills = [
+    ['Python',2,4],['Data structures',1,3],['SQL',2,3],['Statistics',1,3],
+    ['Machine learning',1,4],['Deep learning',0,3],['Model deployment',0,2],['Communication',3,3]
+  ];
+  const localSkills = Array.isArray(l.skills) ? l.skills : [];
+  const skillsChanged = localSkills.length !== defaultSkills.length ||
+    defaultSkills.some(([name,level,required],i) =>
+      !localSkills[i] || localSkills[i].name !== name ||
+      Number(localSkills[i].level) !== level || Number(localSkills[i].required) !== required
+    );
+  const localProfile = l.profile && typeof l.profile === 'object' ? l.profile : {};
+  const localProfileEdited = (
+    (localProfile.role && localProfile.role !== 'AI / ML Engineer') ||
+    (localProfile.experience && localProfile.experience !== 'Student / Fresher') ||
+    (localProfile.timeline && localProfile.timeline !== '6 months') ||
+    !!String(localProfile.objective || '').trim() ||
+    !!String(localProfile.evidence || '').trim()
+  );
+  const defaultDone = [true,true,false,false,false,false,false,false,false,false,false];
+  const localDone = Array.isArray(l.done) ? l.done : [];
+  const progressChanged = localDone.length !== defaultDone.length ||
+    defaultDone.some((value,i) => !!localDone[i] !== value);
+  const localHasWork = localProfileEdited || skillsChanged || progressChanged ||
+    (Array.isArray(l.apps) && l.apps.length > 0) ||
+    (Array.isArray(l.answers) && l.answers.length > 0) ||
+    Number(l.sessions) > 0;
+
+  // A pristine new-device workspace contains seeded defaults, not user edits.
+  // Prefer the existing cloud profile in that case instead of overwriting it with defaults.
+  if (!localHasWork) return c;
+
   const mergeByName = (a, b) => {
     const map = new Map();
     for (const item of [...(Array.isArray(a) ? a : []), ...(Array.isArray(b) ? b : [])]) {
@@ -120,21 +151,16 @@ function mergeWorkspace(cloud, local) {
     return [...map.values()];
   };
   const cloudProfile = c.profile && typeof c.profile === 'object' ? c.profile : {};
-  const localProfile = l.profile && typeof l.profile === 'object' ? l.profile : {};
-  const profile = { ...cloudProfile };
-  for (const [key, value] of Object.entries(localProfile)) {
-    if (typeof value === 'string' ? value.trim() : value !== undefined && value !== null) profile[key] = value;
-  }
+  const profile = localProfileEdited ? { ...cloudProfile, ...localProfile } : { ...cloudProfile };
   const cloudDone = Array.isArray(c.done) ? c.done : [];
-  const localDone = Array.isArray(l.done) ? l.done : [];
-  const done = Array.from({ length: Math.max(cloudDone.length, localDone.length) }, (_, i) => !!cloudDone[i] || !!localDone[i]);
+  const done = Array.from({ length: Math.max(cloudDone.length, localDone.length) }, (_,i) => !!cloudDone[i] || !!localDone[i]);
   const answers = unique([...(Array.isArray(c.answers) ? c.answers : []), ...(Array.isArray(l.answers) ? l.answers : [])],
     item => item.id || item.at + '|' + item.question);
   const apps = unique([...(Array.isArray(c.apps) ? c.apps : []), ...(Array.isArray(l.apps) ? l.apps : [])],
     item => item.id || item.company + '|' + item.role + '|' + item.status);
   return {
     ...c, ...l, profile,
-    skills: mergeByName(c.skills, l.skills),
+    skills: mergeByName(c.skills, localSkills),
     done,
     answers,
     apps,
