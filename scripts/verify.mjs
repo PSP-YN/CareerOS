@@ -72,7 +72,7 @@ for (const marker of ['enable row level security','No direct user access to AI u
   if (!schema.includes(marker)) throw new Error('Missing database security control: '+marker);
 }
 const authSource = readFileSync('auth.js','utf8');
-if (!authSource.includes('const roleChanged =') || !authSource.includes('skills: roleChanged ? localSkills') || !authSource.includes('done: roleChanged ? localDone')) {
+if (!authSource.includes('const roleChanged =') || !authSource.includes('skills: roleChanged ? localSkills') || !authSource.includes('done: roleChanged ? localDone') || !authSource.includes('cloudIsPristineSeed') || !authSource.includes('legacySeededProgress')) {
   throw new Error('Role changes must reset role-specific skill and roadmap progress during cloud merge.');
 }
 const coach = readFileSync('api/coach.js','utf8');
