@@ -17,6 +17,9 @@ if (!app.includes("function fresh(){return{profile:{role:'',experience:'',timeli
 if (app.includes("done:[true,true") || app.includes("D.map(x=>({name:x[0],level:x[1]")) {
   throw new Error('Seeded skill levels or completed roadmap milestones remain in the app initializer.');
 }
+if (!app.includes('Number(x.level)>0&&x.level<x.required') || !app.includes('if(!S.skills.length||S.skills.some(x=>Number(x.level)===0))return null')) {
+  throw new Error('Unassessed skills must not be counted as actual skill gaps or an overall readiness score.');
+}
 if (app.includes('Data is saved in this browser only. No account or cloud sync is implemented.')) {
   throw new Error('Outdated cloud-sync notice remains in the app.');
 }
