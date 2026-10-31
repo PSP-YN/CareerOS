@@ -101,11 +101,13 @@ function mergeWorkspace(cloud, local) {
   ];
   const rawProfile = rawCloud.profile && typeof rawCloud.profile === 'object' ? rawCloud.profile : {};
   const rawSkills = Array.isArray(rawCloud.skills) ? rawCloud.skills : [];
+  const rawDone = Array.isArray(rawCloud.done) ? rawCloud.done : [];
+  const legacySeededProgress = rawDone.length === 11 && rawDone[0] === true && rawDone[1] === true && rawDone.slice(2).every(value => !value);
   const rawResume = rawCloud.resume && typeof rawCloud.resume === 'object' ? rawCloud.resume : {};
   const legacySeededSkills = rawSkills.length === legacyDefaults.length && legacyDefaults.every(([name,level,required],i) =>
     rawSkills[i] && rawSkills[i].name === name && Number(rawSkills[i].level) === level && Number(rawSkills[i].required) === required
   );
-  const cloudIsPristineSeed = legacySeededSkills &&
+  const cloudIsPristineSeed = legacySeededSkills && legacySeededProgress &&
     rawProfile.role === 'AI / ML Engineer' &&
     rawProfile.experience === 'Student / Fresher' &&
     rawProfile.timeline === '6 months' &&
