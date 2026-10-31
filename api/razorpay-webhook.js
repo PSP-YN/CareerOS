@@ -35,6 +35,7 @@ export default async function handler(req, res) {
       user_id: userId, razorpay_subscription_id: entity.id, plan, status,
       current_start: entity.current_start ? new Date(entity.current_start * 1000).toISOString() : null,
       current_end: entity.current_end ? new Date(entity.current_end * 1000).toISOString() : null,
+      ...(status === 'cancelled' ? { cancel_at_cycle_end: false, cancellation_requested_at: null } : {}),
       updated_at: new Date().toISOString()
     };
     const saved = await fetch(url + '/rest/v1/subscriptions?on_conflict=razorpay_subscription_id', {
