@@ -14,7 +14,7 @@ const app = readFileSync('app.html','utf8');
 if (!app.includes("function fresh(){return{profile:{role:'',experience:'',timeline:''") || !app.includes("skills:[],done:[]")) {
   throw new Error('New workspaces must start without a fabricated role, skill ratings, or completed milestones.');
 }
-if (app.includes("done:[true,true") || app.includes("D.map(x=>({name:x[0],level:x[1]"))) {
+if (app.includes("done:[true,true") || app.includes("D.map(x=>({name:x[0],level:x[1]")) {
   throw new Error('Seeded skill levels or completed roadmap milestones remain in the app initializer.');
 }
 if (app.includes('Data is saved in this browser only. No account or cloud sync is implemented.')) {
