@@ -66,6 +66,13 @@ const coach = readFileSync('api/coach.js','utf8');
 if (!coach.includes('GEMINI_API_KEY') || !coach.includes('SUPABASE_SERVICE_ROLE_KEY') || !coach.includes('MAX_CONTEXT_CHARS') || !coach.includes('career_review') || !coach.includes('roadmap_review')) {
   throw new Error('AI API guardrails are incomplete.');
 }
+const frontendFiles = ['index.html','app.html','auth.js','ai.js','billing.js','ads.js'];
+for (const file of frontendFiles) {
+  const source = readFileSync(file,'utf8');
+  for (const secretName of ['SUPABASE_SERVICE_ROLE_KEY','GEMINI_API_KEY','RAZORPAY_KEY_SECRET']) {
+    if (source.includes(secretName)) throw new Error('Server-only secret referenced in frontend file: ' + file);
+  }
+}
 const deleteApi = readFileSync('api/delete-account.js','utf8');
 if (!deleteApi.includes('DELETE MY CAREEROS ACCOUNT') || !deleteApi.includes('claims.iat') || !deleteApi.includes('/auth/v1/admin/users/')) {
   throw new Error('Account deletion safeguards are incomplete.');
