@@ -11,6 +11,15 @@ const required = [
 for (const file of required) if (!existsSync(file)) throw new Error('Missing required file: ' + file);
 
 const app = readFileSync('app.html','utf8');
+if (!app.includes("function fresh(){return{profile:{role:'',experience:'',timeline:''") || !app.includes("skills:[],done:[]")) {
+  throw new Error('New workspaces must start without a fabricated role, skill ratings, or completed milestones.');
+}
+if (app.includes("done:[true,true") || app.includes("D.map(x=>({name:x[0],level:x[1]"))) {
+  throw new Error('Seeded skill levels or completed roadmap milestones remain in the app initializer.');
+}
+if (app.includes('Data is saved in this browser only. No account or cloud sync is implemented.')) {
+  throw new Error('Outdated cloud-sync notice remains in the app.');
+}
 const ids = [...app.matchAll(/\bid="([^"]+)"/g)].map(m => m[1]);
 const duplicates = ids.filter((id,i) => ids.indexOf(id) !== i);
 if (duplicates.length) throw new Error('Duplicate app HTML IDs: ' + [...new Set(duplicates)].join(', '));
@@ -61,6 +70,10 @@ for (const file of jsFiles) {
 const schema = readFileSync('supabase/schema.sql','utf8');
 for (const marker of ['enable row level security','No direct user access to AI usage counters','consume_careeros_ai_quota','upsert_careeros_subscription','provider_event_created_at','service_role','subscriptions']) {
   if (!schema.includes(marker)) throw new Error('Missing database security control: '+marker);
+}
+const authSource = readFileSync('auth.js','utf8');
+if (!authSource.includes('const roleChanged =') || !authSource.includes('skills: roleChanged ? localSkills') || !authSource.includes('done: roleChanged ? localDone')) {
+  throw new Error('Role changes must reset role-specific skill and roadmap progress during cloud merge.');
 }
 const coach = readFileSync('api/coach.js','utf8');
 if (!coach.includes('GEMINI_API_KEY') || !coach.includes('SUPABASE_SERVICE_ROLE_KEY') || !coach.includes('MAX_CONTEXT_CHARS') || !coach.includes('career_review') || !coach.includes('roadmap_review')) {
