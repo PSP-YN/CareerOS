@@ -12,7 +12,7 @@ Vercel → CareerOS project → Settings → Environment Variables. Add these fo
 |---|---|---|
 | SUPABASE_URL | Project URL from Supabase → Project Settings → API | Plain configuration |
 | SUPABASE_ANON_KEY | Publishable/anon key from Supabase → Project Settings → API | Public key (anon/publishable only) |
-| GEMINI_API_KEY | Your Gemini API key from Google AI Studio | Sensitive |
+| SUPABASE_SERVICE_ROLE_KEY | Supabase service_role key from Project Settings → API; server-only | Sensitive |\n| GEMINI_API_KEY | Your Gemini API key from Google AI Studio | Sensitive |
 
 Do not use the Supabase service_role key in the browser or expose it as SUPABASE_ANON_KEY. This app only needs the anon/publishable key in the browser; RLS enforces access.
 
