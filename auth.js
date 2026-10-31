@@ -93,31 +93,47 @@ function showSignedIn(session) {
 }
 
 function mergeWorkspace(cloud, local) {
-  const c = cloud && typeof cloud === 'object' ? cloud : {};
+  const rawCloud = cloud && typeof cloud === 'object' ? cloud : {};
   const l = local && typeof local === 'object' ? local : {};
-  const defaultSkills = [
+  const legacyDefaults = [
     ['Python',2,4],['Data structures',1,3],['SQL',2,3],['Statistics',1,3],
     ['Machine learning',1,4],['Deep learning',0,3],['Model deployment',0,2],['Communication',3,3]
   ];
+  const rawProfile = rawCloud.profile && typeof rawCloud.profile === 'object' ? rawCloud.profile : {};
+  const rawSkills = Array.isArray(rawCloud.skills) ? rawCloud.skills : [];
+  const rawDone = Array.isArray(rawCloud.done) ? rawCloud.done : [];
+  const legacySeededProgress = rawDone.length === 11 && rawDone[0] === true && rawDone[1] === true && rawDone.slice(2).every(value => !value);
+  const rawResume = rawCloud.resume && typeof rawCloud.resume === 'object' ? rawCloud.resume : {};
+  const legacySeededSkills = rawSkills.length === legacyDefaults.length && legacyDefaults.every(([name,level,required],i) =>
+    rawSkills[i] && rawSkills[i].name === name && Number(rawSkills[i].level) === level && Number(rawSkills[i].required) === required
+  );
+  const cloudIsPristineSeed = legacySeededSkills && legacySeededProgress &&
+    rawProfile.role === 'AI / ML Engineer' &&
+    rawProfile.experience === 'Student / Fresher' &&
+    rawProfile.timeline === '6 months' &&
+    !String(rawProfile.objective || '').trim() &&
+    !String(rawProfile.evidence || '').trim() &&
+    !String(rawProfile.jd || '').trim() &&
+    Object.values(rawResume).every(value => !String(value || '').trim()) &&
+    !(Array.isArray(rawCloud.apps) && rawCloud.apps.length) &&
+    !(Array.isArray(rawCloud.answers) && rawCloud.answers.length) &&
+    !(Number(rawCloud.sessions) > 0);
+  const c = cloudIsPristineSeed
+    ? { ...rawCloud, profile: { ...rawProfile, role: '', experience: '', timeline: '' }, skills: [], done: [] }
+    : rawCloud;
   const localSkills = Array.isArray(l.skills) ? l.skills : [];
-  const skillsChanged = localSkills.length !== defaultSkills.length ||
-    defaultSkills.some(([name,level,required],i) =>
-      !localSkills[i] || localSkills[i].name !== name ||
-      Number(localSkills[i].level) !== level || Number(localSkills[i].required) !== required
-    );
+  const skillsChanged = localSkills.length > 0;
   const localProfile = l.profile && typeof l.profile === 'object' ? l.profile : {};
   const localProfileEdited = (
-    (localProfile.role && localProfile.role !== 'AI / ML Engineer') ||
-    (localProfile.experience && localProfile.experience !== 'Student / Fresher') ||
-    (localProfile.timeline && localProfile.timeline !== '6 months') ||
+    !!String(localProfile.role || '').trim() ||
+    !!String(localProfile.experience || '').trim() ||
+    !!String(localProfile.timeline || '').trim() ||
     !!String(localProfile.objective || '').trim() ||
     !!String(localProfile.evidence || '').trim() ||
     !!String(localProfile.jd || '').trim()
   );
-  const defaultDone = [true,true,false,false,false,false,false,false,false,false,false];
   const localDone = Array.isArray(l.done) ? l.done : [];
-  const progressChanged = localDone.length !== defaultDone.length ||
-    defaultDone.some((value,i) => !!localDone[i] !== value);
+  const progressChanged = localDone.some(Boolean);
   const localResume = l.resume && typeof l.resume === 'object' ? l.resume : {};
   const localResumeEdited = Object.values(localResume).some(value => String(value || '').trim());
   const localHasWork = localProfileEdited || skillsChanged || progressChanged || localResumeEdited ||
@@ -154,12 +170,13 @@ function mergeWorkspace(cloud, local) {
     return [...map.values()];
   };
   const cloudProfile = c.profile && typeof c.profile === 'object' ? c.profile : {};
+  const roleChanged = !!String(localProfile.role || '').trim() && localProfile.role !== cloudProfile.role;
   const profile = { ...cloudProfile };
   const resume = { ...(c.resume && typeof c.resume === 'object' ? c.resume : {}) };
   for (const [key,value] of Object.entries(localResume)) if (String(value || '').trim()) resume[key] = value;
-  if (localProfile.role && localProfile.role !== 'AI / ML Engineer') profile.role = localProfile.role;
-  if (localProfile.experience && localProfile.experience !== 'Student / Fresher') profile.experience = localProfile.experience;
-  if (localProfile.timeline && localProfile.timeline !== '6 months') profile.timeline = localProfile.timeline;
+  if (String(localProfile.role || '').trim()) profile.role = localProfile.role;
+  if (String(localProfile.experience || '').trim()) profile.experience = localProfile.experience;
+  if (String(localProfile.timeline || '').trim()) profile.timeline = localProfile.timeline;
   if (String(localProfile.objective || '').trim()) profile.objective = localProfile.objective;
   if (String(localProfile.evidence || '').trim()) profile.evidence = localProfile.evidence;
   if (String(localProfile.jd || '').trim()) profile.jd = localProfile.jd;
@@ -171,9 +188,9 @@ function mergeWorkspace(cloud, local) {
     item => item.id || item.company + '|' + item.role + '|' + item.status);
   return {
     ...c, ...l, profile,
-    skills: skillsChanged ? mergeByName(c.skills, localSkills) : (Array.isArray(c.skills) ? c.skills : localSkills),
+    skills: roleChanged ? localSkills : (skillsChanged ? mergeByName(c.skills, localSkills) : (Array.isArray(c.skills) ? c.skills : localSkills)),
     resume,
-    done: progressChanged ? done : (cloudDone.length ? cloudDone : localDone),
+    done: roleChanged ? localDone : (progressChanged ? done : (cloudDone.length ? cloudDone : localDone)),
     answers,
     apps,
     sessions: Math.max(Number(c.sessions) || 0, Number(l.sessions) || 0)

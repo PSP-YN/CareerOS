@@ -21,13 +21,13 @@ After adding variables, redeploy the Vercel project.
 
 ## 3. Enable Google provider in Supabase
 Supabase → Authentication → Sign In / Providers → Google → Enable.
-Create a Google OAuth Web application in Google Cloud Console.
+Create a Google OAuth Web application in Google Cloud Console. Google OAuth credentials are separate from `GEMINI_API_KEY` and Supabase service-role credentials.
 
 In Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client ID:
 - Authorized JavaScript origin: https://careeros-intelligence.vercel.app
-- Authorized redirect URI: copy the exact Supabase callback URL shown in the Supabase Google provider panel. It normally looks like https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback.
+- Authorized redirect URI: https://wjjfnmpkjmaakgnsvxaz.supabase.co/auth/v1/callback.
 
-Paste the Google Client ID and Client Secret into the Supabase Google provider settings and save.
+Paste the Google Client ID and Client Secret into Supabase → Authentication → Sign In / Providers → Google, enable Google, and save. Do not put the Google Client Secret in Vercel or browser code.
 
 ## 4. Set Supabase URL configuration
 Supabase → Authentication → URL Configuration:
