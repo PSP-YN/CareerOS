@@ -10,6 +10,7 @@
 
 ## Answer Engine Optimization (AEO)
 - Home page explains what CareerOS does in a direct answer.
+- Visible product content covers role-specific career roadmaps, Resume Studio, seven interview rounds and application tracking.
 - FAQ content uses visible question/answer pairs and FAQPage structured data.
 - Pricing, privacy, about and guide pages have distinct canonical URLs.
 - llms.txt states product facts and explicitly lists claims that should not be made.
