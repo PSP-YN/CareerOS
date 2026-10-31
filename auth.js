@@ -95,7 +95,6 @@ function showSignedIn(session) {
 function mergeWorkspace(cloud, local) {
   const c = cloud && typeof cloud === 'object' ? cloud : {};
   const l = local && typeof local === 'object' ? local : {};
-  const defaultSkills = [];
   const localSkills = Array.isArray(l.skills) ? l.skills : [];
   const skillsChanged = localSkills.length > 0;
   const localProfile = l.profile && typeof l.profile === 'object' ? l.profile : {};
@@ -107,7 +106,6 @@ function mergeWorkspace(cloud, local) {
     !!String(localProfile.evidence || '').trim() ||
     !!String(localProfile.jd || '').trim()
   );
-  const defaultDone = [];
   const localDone = Array.isArray(l.done) ? l.done : [];
   const progressChanged = localDone.some(Boolean);
   const localResume = l.resume && typeof l.resume === 'object' ? l.resume : {};
@@ -146,6 +144,7 @@ function mergeWorkspace(cloud, local) {
     return [...map.values()];
   };
   const cloudProfile = c.profile && typeof c.profile === 'object' ? c.profile : {};
+  const roleChanged = !!String(localProfile.role || '').trim() && localProfile.role !== cloudProfile.role;
   const profile = { ...cloudProfile };
   const resume = { ...(c.resume && typeof c.resume === 'object' ? c.resume : {}) };
   for (const [key,value] of Object.entries(localResume)) if (String(value || '').trim()) resume[key] = value;
@@ -163,9 +162,9 @@ function mergeWorkspace(cloud, local) {
     item => item.id || item.company + '|' + item.role + '|' + item.status);
   return {
     ...c, ...l, profile,
-    skills: skillsChanged ? mergeByName(c.skills, localSkills) : (Array.isArray(c.skills) ? c.skills : localSkills),
+    skills: roleChanged ? localSkills : (skillsChanged ? mergeByName(c.skills, localSkills) : (Array.isArray(c.skills) ? c.skills : localSkills)),
     resume,
-    done: progressChanged ? done : (cloudDone.length ? cloudDone : localDone),
+    done: roleChanged ? localDone : (progressChanged ? done : (cloudDone.length ? cloudDone : localDone)),
     answers,
     apps,
     sessions: Math.max(Number(c.sessions) || 0, Number(l.sessions) || 0)
