@@ -5,7 +5,8 @@ India-first career transition workspace for university students, fresh graduates
 
 ## Proposed pricing
 - Explore: ₹0, lifetime free. Core profile, skills, roadmap, interview practice and application tracker. Guest data is browser-local. Ads may appear on public educational pages after AdSense approval, not in the signed-in workspace.
-- Pro: ₹299/month. Cloud sync, multiple target-role plans, exports and expanded AI allowance.
+- Pro: ₹299/month (proposed). 50 authenticated AI coaching requests/day; advanced multi-role, resume and job-match features remain planned.
+- Career Plus: ₹699/month (proposed). 150 authenticated AI coaching requests/day; advanced interview analytics and portfolio/resume review remain planned.
 - Career Plus: ₹699/month. Higher AI allowance, deeper practice and portfolio/resume review workflows.
 These are proposed prices and must be validated with user interviews and unit economics before public billing.
 
@@ -17,7 +18,7 @@ These are proposed prices and must be validated with user interviews and unit ec
 
 ## Unit economics guardrails
 - AI quota is enforced server-side per user/day. Current free quota is 10 requests/day; adjust only after measuring Gemini cost and abuse.
-- Pro and Career Plus quota differentiation is planned in the application, but subscription entitlements need to be activated only from verified Razorpay webhooks.
+- Pro and Career Plus daily quotas are enforced from webhook-confirmed active subscriptions. No plan should be granted from a browser callback alone.
 - Do not offer unlimited AI at a fixed low monthly price.
 - Track paid conversion, monthly recurring revenue, churn, AI cost per active user, gross margin, refund rate and support time.
 - Keep ad impressions away from core task controls; do not trade trust or task completion for ad inventory.
@@ -34,7 +35,7 @@ Create two monthly plans in Razorpay with amounts ₹299 and ₹699. Configure w
 https://careeros-intelligence.vercel.app/api/razorpay-webhook
 Subscribe to:
 subscription.activated, subscription.charged, subscription.halted, subscription.cancelled, subscription.completed, subscription.paused, subscription.resumed.
-Do not enable paid checkout until test-mode orders, signature verification, webhook activation, cancellation and failed-payment flows have been tested. Switch to live keys only after merchant KYC and policy review.
+Self-service cancellation is scheduled for the end of the current billing cycle through the authenticated `/api/cancel-subscription` endpoint; Razorpay webhook events remain authoritative for the final status. Do not enable paid checkout until test-mode orders, signature verification, webhook activation, cancellation and failed-payment flows have been tested. Switch to live keys only after merchant KYC and policy review.
 
 ## Advertising
 Google AdSense approval and publisher/ad-slot IDs are required. Do not serve ads before approval. After approval:
