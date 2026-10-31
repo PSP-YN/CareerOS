@@ -21,61 +21,125 @@ function notify(message) {
   }
 }
 
-function installExportButton() {
+function downloadWorkspace() {
+  const workspace = window.CareerOSState?.get?.();
+  if (!workspace) return notify('Workspace is not ready to export yet.');
+  const payload = {
+    product: 'CareerOS',
+    formatVersion: 1,
+    exportedAt: new Date().toISOString(),
+    account: currentSession?.user?.email || null,
+    workspace
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'careeros-workspace-' + new Date().toISOString().slice(0, 10) + '.json';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  notify('Workspace export downloaded.');
+}
+
+function installAccountTools() {
   const tools = document.querySelector('.auth-tools');
-  if (!tools || $('exportWorkspace')) return;
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.id = 'exportWorkspace';
-  button.className = 'btn';
-  button.textContent = 'Export data';
-  button.setAttribute('aria-label', 'Download a copy of your CareerOS workspace');
-  button.addEventListener('click', () => {
-    const workspace = window.CareerOSState?.get?.();
-    if (!workspace) {
-      notify('Workspace is not ready to export yet.');
-      return;
-    }
-    const payload = {
-      product: 'CareerOS',
-      formatVersion: 1,
-      exportedAt: new Date().toISOString(),
-      account: currentSession?.user?.email || null,
-      workspace
-    };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'careeros-workspace-' + new Date().toISOString().slice(0, 10) + '.json';
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-    notify('Workspace export downloaded.');
-  });
-  tools.insertBefore(button, signIn || tools.firstChild);
+  if (!tools) return;
+  if (!$('exportWorkspace')) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.id = 'exportWorkspace';
+    button.className = 'btn';
+    button.textContent = 'Export data';
+    button.setAttribute('aria-label', 'Download a copy of your CareerOS workspace');
+    button.addEventListener('click', downloadWorkspace);
+    tools.insertBefore(button, signIn || tools.firstChild);
+  }
+  if (!$('deleteAccount')) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.id = 'deleteAccount';
+    button.className = 'btn';
+    button.textContent = 'Delete account';
+    button.hidden = true;
+    button.addEventListener('click', deleteAccount);
+    tools.appendChild(button);
+  }
   const privacyNote = document.querySelector('#profile aside .notice');
   if (privacyNote) {
-    privacyNote.textContent = 'CareerOS saves your workspace in this browser. When you sign in, it also syncs to your private account. Use Export data to keep your own JSON copy.';
+    privacyNote.textContent = 'Guest data is stored in this browser. Signed-in workspaces sync to your private account. Export a JSON copy or delete your account and associated cloud data from the account controls.';
   }
 }
 
 function showSignedIn(session) {
   currentSession = session;
-  if (session && session.user) {
+  const signedIn = !!session?.user;
+  if (signedIn) {
     status.textContent = session.user.user_metadata?.full_name || session.user.email || 'Signed in';
     signIn.hidden = true;
     signOut.hidden = false;
+    if ($('deleteAccount')) $('deleteAccount').hidden = false;
     banner.hidden = false;
-    bannerText.textContent = 'Signed in. Your workspace is syncing to your private CareerOS account.';
+    bannerText.textContent = 'Signed in. Your workspace syncs to your private CareerOS account.';
   } else {
     status.textContent = 'Guest workspace';
     signIn.hidden = false;
     signOut.hidden = true;
+    if ($('deleteAccount')) $('deleteAccount').hidden = true;
     banner.hidden = false;
     bannerText.textContent = 'Guest mode saves on this device. Sign in with Google to sync your workspace across devices.';
   }
+}
+
+function mergeWorkspace(cloud, local) {
+  const c = cloud && typeof cloud === 'object' ? cloud : {};
+  const l = local && typeof local === 'object' ? local : {};
+  const mergeByName = (a, b) => {
+    const map = new Map();
+    for (const item of [...(Array.isArray(a) ? a : []), ...(Array.isArray(b) ? b : [])]) {
+      if (!item || typeof item.name !== 'string') continue;
+      const key = item.name.trim().toLowerCase();
+      if (!key) continue;
+      const previous = map.get(key) || {};
+      map.set(key, {
+        ...previous, ...item,
+        level: Math.max(Number(previous.level) || 0, Number(item.level) || 0),
+        required: Math.max(Number(previous.required) || 0, Number(item.required) || 0)
+      });
+    }
+    return [...map.values()];
+  };
+  const unique = (items, keyFn) => {
+    const map = new Map();
+    for (const item of Array.isArray(items) ? items : []) {
+      if (!item) continue;
+      const key = keyFn(item);
+      if (key !== undefined && key !== null) map.set(String(key), item);
+    }
+    return [...map.values()];
+  };
+  const cloudProfile = c.profile && typeof c.profile === 'object' ? c.profile : {};
+  const localProfile = l.profile && typeof l.profile === 'object' ? l.profile : {};
+  const profile = { ...cloudProfile };
+  for (const [key, value] of Object.entries(localProfile)) {
+    if (typeof value === 'string' ? value.trim() : value !== undefined && value !== null) profile[key] = value;
+  }
+  const cloudDone = Array.isArray(c.done) ? c.done : [];
+  const localDone = Array.isArray(l.done) ? l.done : [];
+  const done = Array.from({ length: Math.max(cloudDone.length, localDone.length) }, (_, i) => !!cloudDone[i] || !!localDone[i]);
+  const answers = unique([...(Array.isArray(c.answers) ? c.answers : []), ...(Array.isArray(l.answers) ? l.answers : [])],
+    item => item.id || item.at + '|' + item.question);
+  const apps = unique([...(Array.isArray(c.apps) ? c.apps : []), ...(Array.isArray(l.apps) ? l.apps : [])],
+    item => item.id || item.company + '|' + item.role + '|' + item.status);
+  return {
+    ...c, ...l, profile,
+    skills: mergeByName(c.skills, l.skills),
+    done,
+    answers,
+    apps,
+    sessions: Math.max(Number(c.sessions) || 0, Number(l.sessions) || 0)
+  };
 }
 
 async function syncWorkspace() {
@@ -89,8 +153,14 @@ async function syncWorkspace() {
     if (error) throw error;
     const local = window.CareerOSState.get();
     if (data?.payload && typeof data.payload === 'object') {
-      window.CareerOSState.replace(data.payload);
-      notify('Your cloud workspace is up to date.');
+      // Merge instead of blindly replacing: signing in must not silently discard guest work.
+      const merged = mergeWorkspace(data.payload, local);
+      window.CareerOSState.replace(merged);
+      const { error: saveError } = await supabase.from('user_workspaces').upsert({
+        user_id: userId, payload: merged, updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id' });
+      if (saveError) throw saveError;
+      notify('Cloud and this-device workspace data have been combined.');
     } else {
       const { error: saveError } = await supabase.from('user_workspaces').upsert({
         user_id: userId, payload: local, updated_at: new Date().toISOString()
@@ -131,9 +201,40 @@ function scheduleSync() {
   }, 700);
 }
 
+async function deleteAccount() {
+  if (!supabase || !currentSession?.user) return;
+  const phrase = 'DELETE MY CAREEROS ACCOUNT';
+  if (!window.confirm('This permanently deletes your CareerOS account and cloud workspace data. Export your data first if you need a copy. Continue?')) return;
+  const typed = window.prompt('Type exactly: ' + phrase);
+  if (typed !== phrase) return notify('Account deletion cancelled. The confirmation phrase did not match.');
+  const button = $('deleteAccount');
+  button.disabled = true;
+  button.textContent = 'Deleting…';
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) throw new Error('Your session has expired. Sign in again.');
+    const response = await fetch('/api/delete-account', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token },
+      cache: 'no-store',
+      body: JSON.stringify({ confirmation: phrase })
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || 'Account deletion failed.');
+    await supabase.auth.signOut({ scope: 'global' });
+    showSignedIn(null);
+    notify('Account and cloud data deleted. Your local browser copy remains available.');
+  } catch (error) {
+    notify(error.message || 'Account deletion could not be completed.');
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Delete account';
+  }
+}
+
 signIn?.addEventListener('click', async () => {
   if (!supabase) {
-    notify('Google sign-in is not configured yet. Add the Supabase environment variables in Vercel.');
+    notify('Google sign-in is not configured yet. Check the Supabase environment and OAuth provider settings.');
     return;
   }
   signIn.disabled = true;
@@ -169,7 +270,7 @@ window.addEventListener('careeros:state-changed', scheduleSync);
 
 (async function initAuth() {
   showSignedIn(null);
-  installExportButton();
+  installAccountTools();
   try {
     const response = await fetch('/api/config', { cache: 'no-store' });
     if (!response.ok) throw new Error('Supabase public configuration is missing.');
@@ -187,9 +288,9 @@ window.addEventListener('careeros:state-changed', scheduleSync);
       if (event === 'SIGNED_OUT') notify('You are signed out.');
     });
   } catch (error) {
-    console.info('Supabase authentication is awaiting project configuration:', error.message);
+    console.info('CareerOS authentication configuration:', error.message);
     status.textContent = 'Guest workspace';
     banner.hidden = false;
-    bannerText.textContent = 'Guest mode is available. Google sign-in activates after Supabase is configured in Vercel.';
+    bannerText.textContent = 'Guest mode is available. Sign-in and cloud sync activate when Supabase and Google OAuth are configured.';
   }
 })();
