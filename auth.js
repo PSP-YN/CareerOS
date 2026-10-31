@@ -114,7 +114,7 @@ signOut?.addEventListener('click', async () => {
     notify('Signed out. Your local workspace remains on this device.');
   }
 });
-window.addEventListener('careeros:state-changed', scheduleSync);
+window.CareerOSAuth = { getAccessToken: async () => { if (!supabase) return null; const result = await supabase.auth.getSession(); return result.data?.session?.access_token || null; } };\nwindow.addEventListener('careeros:state-changed', scheduleSync);
 
 (async function initAuth() {
   showSignedIn(null);
