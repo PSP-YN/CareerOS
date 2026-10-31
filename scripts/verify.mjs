@@ -59,7 +59,7 @@ for (const file of jsFiles) {
   if (check.status !== 0) throw new Error(file + ': ' + check.stderr);
 }
 const schema = readFileSync('supabase/schema.sql','utf8');
-for (const marker of ['enable row level security','consume_careeros_ai_quota','upsert_careeros_subscription','provider_event_created_at','service_role','subscriptions']) {
+for (const marker of ['enable row level security','No direct user access to AI usage counters','consume_careeros_ai_quota','upsert_careeros_subscription','provider_event_created_at','service_role','subscriptions']) {
   if (!schema.includes(marker)) throw new Error('Missing database security control: '+marker);
 }
 const coach = readFileSync('api/coach.js','utf8');
