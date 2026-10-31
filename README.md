@@ -15,12 +15,13 @@ CareerOS is a career planning workspace for students, fresh graduates and early-
 ## Core features
 - Career profile and project evidence.
 - Skill gap analysis and job-description keyword extraction from user-provided text.
-- 11-step roadmap with progress tracking.
-- Behavioral, technical and HR interview practice.
+- Role-specific learning roadmaps with milestone progress tracking.
+- Editable templates for AI/ML, full-stack, backend, frontend, data analyst, cybersecurity and product roles.
+- Seven interview rounds: aptitude, coding, technical, system design, case study, behavioral and HR, each with a dedicated question bank and local practice rubric.
 - Deterministic interview feedback.
 - Optional Gemini coaching with explicit opt-in, authenticated requests and a Postgres-enforced daily quota.
-- Guest mode with browser-local storage.
-- Supabase Google OAuth and per-user workspace sync (requires environment and SQL setup).
+- Guest mode with browser-local storage, JSON export, guest-to-cloud data merge and account deletion endpoint (account deletion requires the server-side service key and recent sign-in).
+- Supabase Google OAuth and per-user workspace sync (requires the Google provider to be enabled and environment setup).
 - Razorpay subscription integration (requires merchant account, plan IDs, webhook and test-mode verification).
 - AdSense slot loader (disabled until publisher approval and IDs are configured).
 
@@ -66,5 +67,6 @@ See [docs/SEO_AEO_GEO.md](docs/SEO_AEO_GEO.md). SEO/AEO/GEO improve machine-read
 ## Important limitations
 - CareerOS does not guarantee jobs, interviews, salary outcomes or placement.
 - Readiness scores and interview feedback are advisory, not validated hiring assessments.
-- Job description analysis does not scrape job boards or provide live labour-market statistics.
+- Application pipeline with editable stages, job links, applied dates and follow-up dates.
+- Job description analysis extracts skill signals from user-provided text; it does not scrape job boards or provide live labour-market statistics.
 - Legal pages are launch drafts and must be completed with the operator's real legal identity and contact details.
