@@ -16,5 +16,5 @@ export default function handler(req, res) {
   } catch { return res.status(500).json({ error: 'Invalid Supabase project URL.' }); }
   const billingEnabled = !!(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET &&
     process.env.RAZORPAY_PRO_PLAN_ID && process.env.RAZORPAY_PLUS_PLAN_ID);
-  return res.status(200).json({ supabaseUrl, supabaseAnonKey, billingEnabled });
+  const adsenseClientId = process.env.ADSENSE_CLIENT_ID || '';\n  const adsenseHomeSlotId = process.env.ADSENSE_HOME_SLOT_ID || '';\n  const adsenseGuideSlotId = process.env.ADSENSE_GUIDE_SLOT_ID || '';\n  return res.status(200).json({ supabaseUrl, supabaseAnonKey, billingEnabled, adsenseClientId, adsenseHomeSlotId, adsenseGuideSlotId });
 }
