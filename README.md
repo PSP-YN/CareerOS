@@ -1,34 +1,70 @@
-# CareerOS — Career intelligence, with a plan
+# CareerOS
 
-CareerOS is a career pivot coach for PS 05. It connects a target role, self-assessed skills, job-description signals, a prioritized roadmap, interview practice, and an application tracker.
+CareerOS is a career planning workspace for students, fresh graduates and early-career professionals. It connects target-role definition, self-assessed skill gaps, learning milestones, interview practice and application tracking.
 
-## Features
-- Responsive career workspace with profile and skill self-assessment.
-- Explainable, directional readiness diagnostic and priority skill gaps.
-- Local keyword extraction from job descriptions supplied by the user.
-- 11-step career roadmap with completion tracking and gap prioritization.
-- Behavioral, technical, and HR interview question sets.
-- Deterministic answer feedback with an optional, explicit-consent Gemini enhancement.
-- Application tracker.
-- Browser-local persistence; no account or cross-device sync.
+**Production domain:** https://careeros-intelligence.vercel.app  
+**Repository:** https://github.com/PSP-YN/CareerOS
 
-## Run locally
-The frontend has no build dependencies:
+## Product surfaces
+- Public marketing website with structured product information and FAQ.
+- Private career workspace at /app.
+- Pricing and proposed subscription tiers at /pricing.
+- Career pivot guide at /career-pivot-guide.
+- About, privacy and terms pages.
 
+## Core features
+- Career profile and project evidence.
+- Skill gap analysis and job-description keyword extraction from user-provided text.
+- 11-step roadmap with progress tracking.
+- Behavioral, technical and HR interview practice.
+- Deterministic interview feedback.
+- Optional Gemini coaching with explicit opt-in, authenticated requests and a Postgres-enforced daily quota.
+- Guest mode with browser-local storage.
+- Supabase Google OAuth and per-user workspace sync (requires environment and SQL setup).
+- Razorpay subscription integration (requires merchant account, plan IDs, webhook and test-mode verification).
+- AdSense slot loader (disabled until publisher approval and IDs are configured).
+
+## Local preview
+Run the static frontend:
 ```bash
 python3 -m http.server 4173
 ```
+Open http://localhost:4173. API routes require the Vercel runtime; for full local API testing use Vercel CLI and local environment variables.
 
-Open http://localhost:4173. The optional `/api/coach` function requires Vercel's serverless runtime. Without a configured Gemini key, local feedback still works.
+## Supabase setup
+Follow [docs/SETUP_SUPABASE.md](docs/SETUP_SUPABASE.md), then run [supabase/schema.sql](supabase/schema.sql) in Supabase SQL Editor. The schema enables RLS for per-user workspace data and subscription metadata, plus a server-only daily AI quota RPC.
 
-## Deploy
-1. Import `PSP-YN/CareerOS` into Vercel.
-2. Use the repository root as the project root. No build command or output directory is required.
-3. Set `GEMINI_API_KEY` in Vercel Project Settings → Environment Variables only if you want the optional Gemini coach.
-4. Redeploy after setting the key.
-5. Verify the live site, profile save, JD keyword extraction, roadmap progress, interview rubric, application tracker, and (if configured) the consent-gated AI endpoint.
+## Vercel environment variables
+Required for Google sign-in and cloud sync:
+- SUPABASE_URL
+- SUPABASE_ANON_KEY (or SUPABASE_PUBLISHABLE_KEY)
 
-## Privacy and limitations
-Candidate data stays in this browser unless the user explicitly opts to send an interview answer to the AI coach. The AI endpoint forwards the selected context to Google's Gemini API. Do not enter sensitive personal data. No authentication, cloud sync, database, live job-market feed, or hiring prediction is implemented. The readiness score and interview rubric are advisory diagnostics, not validated hiring assessments.
+Required for authenticated AI coaching:
+- SUPABASE_SERVICE_ROLE_KEY (server-only)
+- GEMINI_API_KEY (server-only)
 
-See [product scope](docs/PRODUCT.md), [architecture](docs/ARCHITECTURE.md), and [demo script](docs/DEMO_SCRIPT.md).
+Required for Razorpay subscriptions:
+- RAZORPAY_KEY_ID
+- RAZORPAY_KEY_SECRET (server-only)
+- RAZORPAY_PRO_PLAN_ID
+- RAZORPAY_PLUS_PLAN_ID
+- RAZORPAY_WEBHOOK_SECRET (server-only)
+
+Optional after AdSense approval:
+- ADSENSE_CLIENT_ID
+- ADSENSE_HOME_SLOT_ID
+- ADSENSE_GUIDE_SLOT_ID
+
+Never commit actual secrets. Never expose the Supabase service-role key or Razorpay secret in client-side code.
+
+## Monetization
+See [docs/MONETIZATION.md](docs/MONETIZATION.md). Proposed tiers are Explore (free), Pro (₹299/month) and Career Plus (₹699/month). Paid checkout is not live until all Razorpay configuration and end-to-end tests are complete. Ads remain disabled until AdSense approval and consent configuration.
+
+## Discoverability
+See [docs/SEO_AEO_GEO.md](docs/SEO_AEO_GEO.md). SEO/AEO/GEO improve machine-readable information and content quality but do not guarantee search rankings or AI citations.
+
+## Important limitations
+- CareerOS does not guarantee jobs, interviews, salary outcomes or placement.
+- Readiness scores and interview feedback are advisory, not validated hiring assessments.
+- Job description analysis does not scrape job boards or provide live labour-market statistics.
+- Legal pages are launch drafts and must be completed with the operator's real legal identity and contact details.
