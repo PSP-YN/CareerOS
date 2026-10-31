@@ -93,8 +93,32 @@ function showSignedIn(session) {
 }
 
 function mergeWorkspace(cloud, local) {
-  const c = cloud && typeof cloud === 'object' ? cloud : {};
+  const rawCloud = cloud && typeof cloud === 'object' ? cloud : {};
   const l = local && typeof local === 'object' ? local : {};
+  const legacyDefaults = [
+    ['Python',2,4],['Data structures',1,3],['SQL',2,3],['Statistics',1,3],
+    ['Machine learning',1,4],['Deep learning',0,3],['Model deployment',0,2],['Communication',3,3]
+  ];
+  const rawProfile = rawCloud.profile && typeof rawCloud.profile === 'object' ? rawCloud.profile : {};
+  const rawSkills = Array.isArray(rawCloud.skills) ? rawCloud.skills : [];
+  const rawResume = rawCloud.resume && typeof rawCloud.resume === 'object' ? rawCloud.resume : {};
+  const legacySeededSkills = rawSkills.length === legacyDefaults.length && legacyDefaults.every(([name,level,required],i) =>
+    rawSkills[i] && rawSkills[i].name === name && Number(rawSkills[i].level) === level && Number(rawSkills[i].required) === required
+  );
+  const cloudIsPristineSeed = legacySeededSkills &&
+    rawProfile.role === 'AI / ML Engineer' &&
+    rawProfile.experience === 'Student / Fresher' &&
+    rawProfile.timeline === '6 months' &&
+    !String(rawProfile.objective || '').trim() &&
+    !String(rawProfile.evidence || '').trim() &&
+    !String(rawProfile.jd || '').trim() &&
+    Object.values(rawResume).every(value => !String(value || '').trim()) &&
+    !(Array.isArray(rawCloud.apps) && rawCloud.apps.length) &&
+    !(Array.isArray(rawCloud.answers) && rawCloud.answers.length) &&
+    !(Number(rawCloud.sessions) > 0);
+  const c = cloudIsPristineSeed
+    ? { ...rawCloud, profile: { ...rawProfile, role: '', experience: '', timeline: '' }, skills: [], done: [] }
+    : rawCloud;
   const localSkills = Array.isArray(l.skills) ? l.skills : [];
   const skillsChanged = localSkills.length > 0;
   const localProfile = l.profile && typeof l.profile === 'object' ? l.profile : {};
