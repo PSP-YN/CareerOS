@@ -111,7 +111,8 @@ function mergeWorkspace(cloud, local) {
     (localProfile.experience && localProfile.experience !== 'Student / Fresher') ||
     (localProfile.timeline && localProfile.timeline !== '6 months') ||
     !!String(localProfile.objective || '').trim() ||
-    !!String(localProfile.evidence || '').trim()
+    !!String(localProfile.evidence || '').trim() ||
+    !!String(localProfile.jd || '').trim()
   );
   const defaultDone = [true,true,false,false,false,false,false,false,false,false,false];
   const localDone = Array.isArray(l.done) ? l.done : [];
@@ -161,6 +162,7 @@ function mergeWorkspace(cloud, local) {
   if (localProfile.timeline && localProfile.timeline !== '6 months') profile.timeline = localProfile.timeline;
   if (String(localProfile.objective || '').trim()) profile.objective = localProfile.objective;
   if (String(localProfile.evidence || '').trim()) profile.evidence = localProfile.evidence;
+  if (String(localProfile.jd || '').trim()) profile.jd = localProfile.jd;
   const cloudDone = Array.isArray(c.done) ? c.done : [];
   const done = Array.from({ length: Math.max(cloudDone.length, localDone.length) }, (_,i) => !!cloudDone[i] || !!localDone[i]);
   const answers = unique([...(Array.isArray(c.answers) ? c.answers : []), ...(Array.isArray(l.answers) ? l.answers : [])],
