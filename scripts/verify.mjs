@@ -33,6 +33,9 @@ for (const id of ['overview','profile','resume','skills','roadmap','interview','
   if (!ids.includes(id)) throw new Error('Missing app control: ' + id);
 }
 
+if (!app.includes('data-remove-skill') || !app.includes('Skill removed from your assessment.')) {
+  throw new Error('Skill assessment is missing the remove-skill action.');
+}
 const interview = ['aptitude','coding','technical','system_design','case_study','behavioral','hr'];
 for (const round of interview) if (!app.includes(round + ':') && !app.includes('value="' + round + '"')) {
   throw new Error('Missing interview round: ' + round);
