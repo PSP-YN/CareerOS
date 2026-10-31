@@ -23,6 +23,9 @@ if (!app.includes('Number(x.level)>0&&x.level<x.required') || !app.includes('if(
 if (app.includes('Data is saved in this browser only. No account or cloud sync is implemented.')) {
   throw new Error('Outdated cloud-sync notice remains in the app.');
 }
+if (!app.includes('RESUME_FIELDS.forEach(id=>$(id).addEventListener(\'input\'' ) || !app.includes("addEventListener('change',e=>{if(e.target.dataset.skill!==undefined)render()})")) {
+  throw new Error('Resume preview or skill slider interaction is not wired for live updates.');
+}
 const ids = [...app.matchAll(/\bid="([^"]+)"/g)].map(m => m[1]);
 const duplicates = ids.filter((id,i) => ids.indexOf(id) !== i);
 if (duplicates.length) throw new Error('Duplicate app HTML IDs: ' + [...new Set(duplicates)].join(', '));
