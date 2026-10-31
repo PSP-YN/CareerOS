@@ -8,9 +8,28 @@ export default async function handler(req, res) {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'Method not allowed' });
   }
-  if (!process.env.GEMINI_API_KEY) {
-    return res.status(503).json({ error: 'Gemini is not configured. Use the local feedback engine.' });
+
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const anonKey = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const authorization = req.headers.authorization || '';
+  const token = authorization.startsWith('Bearer ') ? authorization.slice(7) : '';
+  if (!supabaseUrl || !anonKey || !serviceKey || !token) {
+    return res.status(503).json({ error: 'AI coaching is not configured. Sign in and complete the server configuration.' });
   }
+
+  let userResponse;
+  try {
+    userResponse = await fetch(supabaseUrl + '/auth/v1/user', {
+      headers: { apikey: anonKey, Authorization: 'Bearer ' + token }
+    });
+  } catch {
+    return res.status(502).json({ error: 'Could not validate the signed-in account.' });
+  }
+  if (!userResponse.ok) return res.status(401).json({ error: 'Sign in again to continue.' });
+  const user = await userResponse.json();
+  if (!user?.id) return res.status(401).json({ error: 'A valid signed-in account is required.' });
+
   const body = req.body && typeof req.body === 'object' ? req.body : {};
   const { task, context } = body;
   if (!ALLOWED.has(task) || !context || typeof context !== 'object' || Array.isArray(context)) {
@@ -22,6 +41,27 @@ export default async function handler(req, res) {
   }
   if (serialized.length > MAX_CONTEXT_CHARS) {
     return res.status(413).json({ error: 'Context is too large. Shorten the supplied text.' });
+  }
+
+  // Atomic daily quota is enforced in Postgres; the service-role key never leaves this function.
+  try {
+    const quota = await fetch(supabaseUrl + '/rest/v1/rpc/consume_careeros_ai_quota', {
+      method: 'POST',
+      headers: {
+        apikey: serviceKey,
+        Authorization: 'Bearer ' + serviceKey,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ p_user_id: user.id, p_daily_limit: 10 })
+    });
+    if (!quota.ok) return res.status(503).json({ error: 'AI usage quota is not configured. Run the supplied Supabase schema migration.' });
+    if (await quota.json() !== true) return res.status(429).json({ error: 'Daily AI coaching limit reached. Try again tomorrow.' });
+  } catch {
+    return res.status(503).json({ error: 'AI usage quota could not be checked.' });
+  }
+
+  if (!process.env.GEMINI_API_KEY) {
+    return res.status(503).json({ error: 'Gemini is not configured. Local interview feedback remains available.' });
   }
 
   const prompt = [
@@ -55,9 +95,7 @@ export default async function handler(req, res) {
     } finally {
       clearTimeout(timeout);
     }
-    if (!upstream.ok) {
-      return res.status(502).json({ error: 'AI provider request failed. Local feedback remains available.' });
-    }
+    if (!upstream.ok) return res.status(502).json({ error: 'AI provider request failed. Local feedback remains available.' });
     const data = await upstream.json();
     const output = data.candidates?.[0]?.content?.parts?.map(part => part.text || '').join('').trim();
     if (!output) return res.status(502).json({ error: 'AI provider returned no usable feedback.' });
@@ -71,7 +109,8 @@ export default async function handler(req, res) {
         next_actions: Array.isArray(result.next_actions) ? result.next_actions.filter(x => typeof x === 'string').slice(0, 5).map(x => x.slice(0, 300)) : [],
         caveats: Array.isArray(result.caveats) ? result.caveats.filter(x => typeof x === 'string').slice(0, 4).map(x => x.slice(0, 300)) : []
       },
-      model: 'gemini-2.5-flash'
+      model: 'gemini-2.5-flash',
+      quota: { dailyLimit: 10 }
     });
   } catch {
     return res.status(502).json({ error: 'AI service timed out or is unavailable. Try again later.' });
