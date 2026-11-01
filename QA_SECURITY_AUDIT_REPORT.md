@@ -1,68 +1,64 @@
-# CareerOS Automated QA & Security Hardening Report
+# CareerOS Automated QA & Product Release Report
 
-**Date:** November 1, 2026  
-**Automated CI:** 64 tests expected after consent regression test; previous CI run passed 63 tests, 18 suites, 0 failures  
-**Release commit:** `b8341a7d4a971292e787fe3bc2d9960cc7c0965f`
+**Date:** 2 November 2026  
+**Release branch:** `startup-product-evolution` (awaiting CI and production acceptance)  
+**Product stage:** free early-access pilot
 
----
+## 1. Product scope
 
-## 1. Scope and limitations
+CareerOS is positioned as a career decision and readiness workspace connecting role choices, skill evidence, structured interview practice and job-search execution.
 
-This release adds automated regression coverage and targeted security hardening. The Node.js test suite exercises API handlers with mocked upstream services, core state logic, and static security/configuration assertions.
-
-**These tests are not a complete end-to-end browser audit.** They do not prove live Google OAuth, multi-device synchronization, actual Gemini provider responses, admin workflows in a browser, account deletion against a real user, or every mobile/accessibility interaction. Those flows still require live validation.
-
-## 2. Included prototype capabilities
-
-- Career profile, skill-gap assessment and roadmap planning.
-- Seven interview-practice rounds with local heuristic feedback.
-- Resume drafting, TXT export and browser print/PDF.
+The workspace includes:
+- Career profile and role-specific skill baselines.
+- Editable skill gaps and learning roadmaps.
+- Resume Studio and exports.
 - Application tracking.
-- Optional Gemini career, roadmap and interview reviews for signed-in users.
-- Supabase-backed private workspace sync, subject to Google OAuth and database configuration.
-- No active checkout or payment flow. Razorpay environment variables are not configured; billing is intentionally outside this prototype.
+- Decision Studio with user-weighted comparison of two roles, offers or learning paths.
+- Seven interview categories: aptitude, coding, technical, system design, case study, behavioral and HR.
+- 140 additional original practice prompts (20 per round) and a structured 14-question mock interview (two questions per round).
+- Optional Gemini career, roadmap and interview feedback, with explicit consent and a server-enforced 10-request daily per-user quota.
 
-## 3. Security and reliability changes
+## 2. Important scoring limitations
 
-- Gemini API key remains server-side and is sent to Google using the `x-goog-api-key` request header, not a URL query parameter.
-- Gemini requests are rejected server-side unless the request includes explicit consent; the UI checkbox remains required as well.
-- Gemini response parsing strips optional Markdown fences, validates object shape, bounds returned fields and reports provider failures with actionable status codes.
-- Free Gemini coaching uses a fixed **10-request daily per-user quota** enforced by the existing Postgres RPC. It no longer queries the `subscriptions` table or depends on paid entitlements.
-- API handlers distinguish missing authentication from missing server configuration.
-- Account deletion safely handles malformed JWT payloads and requires a recently issued access token plus an exact confirmation phrase.
-- Razorpay webhook request bodies are capped at 256 KB to limit memory-exhaustion risk. This is hardening of dormant legacy code, not an enabled payment feature.
-- Subscription signature inputs are type-checked and constrained to 64 hexadecimal characters before timing-safe comparison.
-- Subscription webhook upserts handle same-second provider events without allowing older events to overwrite newer state.
-- Client-side sorting and roadmap traversal handle empty or malformed state more safely.
-- Supabase SECURITY DEFINER functions use a pinned search path and the AI usage counter is not directly readable or writable by browser roles.
+The Decision Studio uses user-entered ratings and fixed default weights. It is a reflection tool, not an objective career recommendation or live job-market forecast.
 
-## 4. Automated validation
+The current mock interview uses a local keyword/rubric heuristic for answer scoring. It does not measure communication quality, correctness or real hiring probability. Gemini review is optional and separate. The question bank is original practice content, not verified employer interview questions.
 
-| Suite | Coverage | Tests |
-|---|---|---:|
-| API handlers | Method/auth/input validation, quota behavior, Gemini response handling, account deletion and dormant billing-handler edge cases | 32 |
-| Core logic | Role templates, skill gaps, readiness, workspace merging and sanitization | 11 |
-| Security assertions | Secret exposure, headers, RLS/schema expectations and crawler policy | 20 |
-| **Total** | **GitHub Actions: `npm run check` succeeded** | **63 / 63 passed** |
+## 3. Security and reliability
 
-CI run: [GitHub Actions run 41337082452](https://github.com/PSP-YN/CareerOS/actions/runs/41337082452).
+- Gemini API key remains server-side and is sent using the `x-goog-api-key` request header.
+- Gemini requests are rejected server-side without explicit consent.
+- Free Gemini coaching does not query subscription entitlements; one atomic server-side quota applies to all users.
+- Supabase quota RPC remains restricted to the service role; AI usage records are not directly readable or writable by browser roles.
+- Supabase SECURITY DEFINER functions use a pinned search path.
+- Workspace records use per-user RLS policies.
+- Account deletion validates the access token and exact confirmation phrase.
+- Payment UI, payment client code and payment API endpoints have been removed for the free pilot. `/api/config` reports `billingEnabled: false` even if legacy payment variables exist. The legacy subscription table remains dormant and protected by RLS; it is not used by the pilot.
+- The Supabase Pro-only leaked-password protection setting remains unavailable on the current plan. It is a documented residual platform limitation.
 
-## 5. Free-mode configuration
+## 4. Automated checks
 
-- `/api/config` reports `billingEnabled: false` when payment credentials are absent.
-- The application does not require Razorpay credentials for its core workspace or Gemini free quota.
-- Gemini requires a valid server-side `GEMINI_API_KEY`; Google AI Studio free-tier availability and rate limits are controlled by Google.
-- Cloud workspace sync requires Supabase public configuration, a server-side service-role key for privileged APIs, and a working Google OAuth configuration.
-- The Supabase Pro-only leaked-password protection setting remains disabled because it is not available on the current plan. This is documented as a residual platform limitation, not a code-level security fix.
+GitHub Actions runs `npm run check`, including static verification, JavaScript syntax checks and Node test suites. The release branch adds checks for:
+- All seven interview rounds and at least 20 new questions in each full-scale round.
+- Loading the question bank and interview/decision modules.
+- Decision Studio and full mock interview controls.
+- Removal of hackathon problem-statement branding from the app.
+- Payment-disabled API configuration.
+- Existing API, core-state, workspace merge, sanitization and security regression cases.
 
-## 6. Live validation still required
+The CI run attached to the release pull request is the authoritative test result. Do not copy an earlier main-branch test count as the result for this release.
 
-1. Sign in with Google and confirm the authenticated workspace state.
-2. Run one Gemini review for each task type and confirm real provider feedback is rendered.
-3. Save profile, skills and roadmap changes; reopen the same account on another device.
-4. Verify role switching does not leak the previous role's assessments or milestones.
-5. Test admin access with both admin and non-admin accounts.
-6. Test account deletion only with a disposable test account.
-7. Complete keyboard-only and narrow-screen browser checks.
+## 5. Live acceptance tests still required
 
-Do not describe CareerOS as fully production-validated until these live checks are complete.
+1. Google OAuth sign-in, returning sessions, sign-out and cross-device sync.
+2. Real Gemini response for each of the three supported task types.
+3. Complete all 14 questions in a mock and verify the round scorecard and saved history.
+4. Compare two options in Decision Studio, save, reload and confirm persistence.
+5. Switch target roles and verify no role-specific assessment leaks.
+6. Admin question CRUD and non-admin denial.
+7. Resume preview, print/PDF and mobile layout.
+8. Account deletion using a disposable test account.
+9. Keyboard-only navigation and narrow-screen browser testing.
+10. Production smoke tests for every API route and security headers.
+
+Do not call CareerOS production-ready until the release CI is green, the live acceptance tests pass, and no unresolved critical/high-severity issue remains.
