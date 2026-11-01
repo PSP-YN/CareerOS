@@ -117,6 +117,7 @@
       state.mockInterviewHistory.unshift({
         id: 'mock-' + Date.now(),
         completedAt: new Date().toISOString(),
+        role: String(state.profile?.role || 'Unspecified role'),
         questionCount: count,
         plannedQuestions: sequence.length,
         averageScore: average,
