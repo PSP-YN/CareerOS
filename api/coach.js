@@ -55,21 +55,9 @@ export default async function handler(req, res) {
     return res.status(503).json({ error: 'Gemini is not configured. Local interview feedback remains available.' });
   }
 
-  // Determine paid entitlements only from webhook-confirmed active subscriptions.
-  let dailyLimit = 10;
-  try {
-    const planResponse = await fetch(
-      supabaseUrl + '/rest/v1/subscriptions?user_id=eq.' + encodeURIComponent(user.id) +
-      '&status=eq.active&select=plan&order=updated_at.desc&limit=1',
-      { headers: { apikey: serviceKey, Authorization: 'Bearer ' + serviceKey } }
-    );
-    if (!planResponse.ok) return res.status(503).json({ error: 'Subscription entitlements could not be checked.' });
-    const active = await planResponse.json();
-    if (active?.[0]?.plan === 'pro') dailyLimit = 50;
-    if (active?.[0]?.plan === 'career_plus') dailyLimit = 150;
-  } catch {
-    return res.status(503).json({ error: 'Subscription entitlements could not be checked.' });
-  }
+  // CareerOS is operating as a free prototype: no paid-plan lookup or billing dependency.
+  // Enforce one server-side free allowance for every signed-in account.
+  const dailyLimit = 10;
 
   // Atomic daily quota is enforced in Postgres; the service-role key never leaves this function.
   try {
