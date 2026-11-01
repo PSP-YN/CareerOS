@@ -25,7 +25,7 @@ const extendedMatch=extendedSource.match(/window\.CareerOSQuestionBank\s*=\s*(\{
 if(!extendedMatch) throw Error('Extended question bank is missing.');
 const extended=JSON.parse(extendedMatch[1].replace(/(^|\n)\s*([a-z_]+)\s*:/g,'$1"$2":'));
 const fullScaleSource=readText('website/data/full-scale-questions.js');
-const fullScaleMatch=fullScaleSource.match(/window\.CareerOSFullScaleQuestions\s*=\s*(\{[\s\S]*\});/);
+const fullScaleMatch=fullScaleSource.match(/window\.CareerOSFullScaleQuestions\s*=\s*(\{[\s\S]*?\});/);
 if(!fullScaleMatch) throw Error('Full-scale interview question bank is missing.');
 const fullScale=JSON.parse(fullScaleMatch[1]);
 
