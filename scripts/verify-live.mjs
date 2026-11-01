@@ -42,7 +42,7 @@ if (!geminiKey) {
 } else {
   try {
     const res = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent',
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-goog-api-key': geminiKey },
@@ -54,7 +54,7 @@ if (!geminiKey) {
     );
     const data = await res.json().catch(() => ({}));
     if (res.ok && Array.isArray(data.candidates) && data.candidates.length > 0) {
-      console.log('   [PASS] Google Gemini 2.5 Flash returned a model response.');
+      console.log('   [PASS] Google Gemini 3.8 Flash returned a model response.');
     } else {
       console.log(`   [FAIL] Google Gemini check failed: HTTP ${res.status} - ${data.error?.message || 'No candidate response returned'}`);
       allPassed = false;
