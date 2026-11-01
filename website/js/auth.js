@@ -184,8 +184,10 @@ function mergeWorkspace(cloud, local) {
   if (String(localProfile.jd || '').trim()) profile.jd = localProfile.jd;
   const cloudDone = Array.isArray(c.done) ? c.done : [];
   const done = Array.from({ length: Math.max(cloudDone.length, localDone.length) }, (_,i) => !!cloudDone[i] || !!localDone[i]);
-  const answers = unique([...(Array.isArray(c.answers) ? c.answers : []), ...(Array.isArray(l.answers) ? l.answers : [])],
-    item => item.id || item.at + '|' + item.question);
+  const answers = roleChanged
+    ? (Array.isArray(l.answers) ? l.answers : [])
+    : unique([...(Array.isArray(c.answers) ? c.answers : []), ...(Array.isArray(l.answers) ? l.answers : [])],
+      item => item.id || item.at + '|' + item.question);
   const apps = unique([...(Array.isArray(c.apps) ? c.apps : []), ...(Array.isArray(l.apps) ? l.apps : [])],
     item => item.id || item.company + '|' + item.role + '|' + item.status);
   return {
@@ -195,7 +197,7 @@ function mergeWorkspace(cloud, local) {
     done: roleChanged ? localDone : (progressChanged ? done : (cloudDone.length ? cloudDone : localDone)),
     answers,
     apps,
-    sessions: Math.max(Number(c.sessions) || 0, Number(l.sessions) || 0)
+    sessions: roleChanged ? (Number(l.sessions) || 0) : Math.max(Number(c.sessions) || 0, Number(l.sessions) || 0)
   };
 }
 
