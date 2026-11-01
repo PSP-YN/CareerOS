@@ -23,7 +23,7 @@ const content=JSON.parse(contentMatch[1]);
 const extendedSource=readText('website/data/extended-questions.js');
 const extendedMatch=extendedSource.match(/window\.CareerOSQuestionBank\s*=\s*(\{[\s\S]*\});/);
 if(!extendedMatch) throw Error('Extended question bank is missing.');
-const extended=JSON.parse(extendedMatch[1]);
+const extended=JSON.parse(extendedMatch[1].replace(/(^|\\n)\\s*([a-z_]+)\\s*:/g,'$1"$2":'));
 
 if(!app.includes('profile:{role:\'\',experience:\'\',timeline:\'\'')||!app.includes('skills:[],done:[]'))
   throw Error('New workspaces must start without fabricated profile, skill or milestone data.');
