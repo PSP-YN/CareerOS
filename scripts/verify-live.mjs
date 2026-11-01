@@ -39,6 +39,9 @@ const geminiKey = process.env.GEMINI_API_KEY;
 if (!geminiKey) {
   console.log('   [-] GEMINI_API_KEY is not set in environment or .env/.env.local');
   allPassed = false;
+} else if (process.env.GEMINI_PAID_DATA_PROCESSING !== 'true') {
+  console.log('   [-] Gemini check blocked: CareerOS only sends personal career context through a billing-enabled Gemini project. The unpaid tier may use prompts and responses to improve Google products and may involve human review.');
+  allPassed = false;
 } else {
   try {
     const res = await fetch(
