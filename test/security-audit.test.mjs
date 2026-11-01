@@ -6,15 +6,13 @@ describe('Security Audit: Secret Exposure & Client Bundle Hygiene', () => {
   const clientFiles = [
     'website/index.html', 'website/app.html', 'website/about.html', 'website/pricing.html', 'website/privacy.html',
     'website/terms.html', 'website/career-pivot-guide.html', 'website/admin.html',
-    'website/js/auth.js', 'website/js/ai.js', 'website/js/billing.js', 'website/js/ads.js', 'website/js/app.js', 'website/js/admin.js',
+    'website/js/auth.js', 'website/js/ai.js', 'website/js/ads.js', 'website/js/app.js', 'website/js/admin.js',
     'website/assets/styles.css'
   ];
 
   const serverSecrets = [
     'SUPABASE_SERVICE_ROLE_KEY',
     'GEMINI_API_KEY',
-    'RAZORPAY_KEY_SECRET',
-    'RAZORPAY_WEBHOOK_SECRET'
   ];
 
   test('no server secrets or private keys are referenced in any client-facing source file', () => {
@@ -28,6 +26,18 @@ describe('Security Audit: Secret Exposure & Client Bundle Hygiene', () => {
         );
       }
     }
+  });
+
+  test('payment client and API routes are absent during the free pilot', () => {
+    for (const file of [
+      'website/js/billing.js',
+      'api/create-subscription.js',
+      'api/verify-subscription.js',
+      'api/cancel-subscription.js',
+      'api/razorpay-webhook.js'
+    ]) assert.equal(existsSync(file), false, file + ' must not ship in the free pilot.');
+    const config = readFileSync('api/config.js', 'utf8');
+    assert.ok(config.includes('const billingEnabled = false;'));
   });
 
   test('.env.example contains no hardcoded values', () => {

@@ -1,6 +1,6 @@
 # CareerOS
 
-**CareerOS is a career-development platform built to turn professional ambition into measurable, evidence-led progress.**
+**CareerOS is a career decision and readiness platform that connects role choices, skill evidence, structured interview practice and job-search execution.**
 
 [Explore CareerOS](https://careeros-intelligence.vercel.app) · [Open the workspace](https://careeros-intelligence.vercel.app/app) · [About the platform](https://careeros-intelligence.vercel.app/about)
 
@@ -8,26 +8,26 @@
 
 Career preparation is fragmented. People are expected to choose a direction, understand the skills a role requires, decide what to learn, demonstrate their ability, prepare for interviews and manage applications—often across disconnected tools.
 
-CareerOS brings those activities into one connected workspace. It is designed to help students, graduates, career changers and working professionals make informed decisions and follow through with practical evidence.
+CareerOS connects those activities in one workspace. The product thesis is that a candidate should be able to compare options, understand the evidence a role requires, identify skill gaps, rehearse a complete interview loop and learn from application outcomes without losing context between tools.
 
 ## The CareerOS experience
 
-- **Career direction** — define a target role, experience level, timeline and professional objective.
+- **Decision Studio** — compare two career paths, job offers or learning options with transparent, user-controlled criteria and weights.
 - **Skill intelligence** — assess current capabilities, compare them with target levels and identify priorities.
 - **Actionable development** — turn a role goal into an editable learning and portfolio roadmap.
 - **Resume Studio** — create an evidence-led resume from real experience, education, projects and skills.
-- **Interview Lab** — practise aptitude, coding, technical, system design, case study, behavioral and HR interviews.
+- **Interview Lab** — use an expanded question bank across aptitude, coding, technical, system design, case study, behavioral and HR; run a structured 14-question mock across all seven rounds and review a round-level scorecard.
 - **Opportunity tracking** — organise applications, stages, dates, notes and follow-ups.
 - **Optional AI coaching** — request Gemini-powered career, roadmap and interview feedback when configured and explicitly enabled.
 - **Personal workspace** — start in guest mode or sign in for private, account-based cloud synchronisation.
 
-## What makes the platform different
+## Product differentiation hypothesis
 
-1. **Evidence over assumptions.** A new workspace does not pretend that a user has skills, achievements or completed milestones they have not entered.
-2. **Action over generic advice.** Recommendations should lead to a specific skill, milestone, work sample or next step.
-3. **Transparency over inflated scores.** Readiness indicators are directional and explain their inputs; they are not hiring predictions.
-4. **Privacy and user control.** AI assistance is opt-in, account data is access-controlled, and users remain responsible for the information they submit.
-5. **One connected journey.** Career direction, development, proof, preparation and opportunity management belong in the same workflow.
+1. **Decisions connected to execution.** Compare paths, map gaps, practise interviews and track applications in one continuous workflow.
+2. **Evidence over assumptions.** A new workspace does not pretend that a user has skills, achievements or completed milestones they have not entered.
+3. **Action over generic advice.** Recommendations should lead to a specific skill, milestone, work sample or next step.
+4. **Transparency over inflated scores.** Readiness indicators are directional and explain their inputs; they are not hiring predictions.
+5. **Privacy and user control.** AI assistance is opt-in, account data is access-controlled, and users remain responsible for the information they submit.
 
 ## Built for people at different career stages
 
@@ -39,7 +39,13 @@ CareerOS is a planning and practice platform—not a recruiter, placement agency
 
 Gemini coaching is optional. When a user explicitly requests a review and gives consent, the selected context is sent to Google's Gemini service. The application keeps the Gemini API key on the server; it must never be embedded in the public website.
 
-Paid plans and payment processing remain subject to launch configuration and end-to-end verification. Proposed prices should not be interpreted as an active subscription offer.
+CareerOS is currently in a free early-access pilot. No payment checkout is enabled. Gemini usage is subject to Google API quotas and the application's per-user daily limit.
+
+## Strategy and launch documents
+
+- [Competitive positioning](docs/COMPETITIVE_POSITIONING.md)
+- [Startup launch and fundraising plan](docs/STARTUP_LAUNCH_AND_FUNDRAISING.md)
+- [Automated QA and security report](QA_SECURITY_AUDIT_REPORT.md)
 
 ## Explore the platform
 
@@ -54,4 +60,4 @@ Paid plans and payment processing remain subject to launch configuration and end
 
 Our goal is to make career development more structured, practical and accountable: one place to understand the destination, identify the work required, build credible evidence and manage the steps that follow.
 
-**CareerOS — Career intelligence, with a plan.**
+**CareerOS — Decide with evidence. Prepare with purpose.**
