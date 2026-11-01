@@ -43,6 +43,9 @@ export default async function handler(req, res) {
   if (!ALLOWED.has(task) || !context || typeof context !== 'object' || Array.isArray(context)) {
     return res.status(400).json({ error: 'Invalid task or context.' });
   }
+  if (body.consent !== true) {
+    return res.status(400).json({ error: 'Explicit consent is required before sending your information to Gemini.' });
+  }
   let serialized;
   try { serialized = JSON.stringify(context); } catch {
     return res.status(400).json({ error: 'Context must be valid JSON data.' });
