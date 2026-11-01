@@ -81,6 +81,24 @@ describe('Security Audit: HTTP Security Headers (vercel.json)', () => {
     assert.ok(csp.includes('upgrade-insecure-requests'), 'CSP must upgrade insecure requests');
   });
 
+  test('payment-provider origins are absent from the Content Security Policy', () => {
+    const csp = headerMap.get('content-security-policy') || '';
+    assert.ok(!/razorpay/i.test(csp), 'Razorpay origins must be removed after payment integration removal.');
+  });
+
+  test('Gemini coach and live verifier use the supported Gemini 3.8 Flash model', () => {
+    const coach = readFileSync('api/coach.js', 'utf8');
+    const liveCheck = readFileSync('scripts/verify-live.mjs', 'utf8');
+    assert.ok(coach.includes('models/gemini-3.8-flash:generateContent'));
+    assert.ok(liveCheck.includes('models/gemini-3.8-flash:generateContent'));
+    assert.ok(!coach.includes('gemini-2.5-flash'));
+  });
+
+  test('structured mock draws from the full-scale interview question bank', () => {
+    const engine = readFileSync('website/js/interview-engine.js', 'utf8');
+    assert.ok(engine.includes('CareerOSFullScaleQuestions'));
+  });
+
   test('Permissions-Policy disables camera, microphone and geolocation', () => {
     const perm = headerMap.get('permissions-policy');
     assert.ok(perm && perm.includes('camera=()') && perm.includes('microphone=()') && perm.includes('geolocation=()'));
@@ -94,6 +112,18 @@ describe('Security Audit: Database RLS & Privileges (supabase/schema.sql)', () =
     assert.ok(schema.includes('alter table public.user_workspaces enable row level security;'));
     assert.ok(schema.includes('alter table public.ai_usage_daily enable row level security;'));
     assert.ok(schema.includes('alter table public.subscriptions enable row level security;'));
+  });
+
+  test('workspace and legacy subscription grants follow least privilege', () => {
+    assert.ok(schema.includes('revoke all on public.user_workspaces from public, anon, authenticated;'));
+    assert.ok(schema.includes('grant select, insert, update on public.user_workspaces to authenticated;'));
+    assert.ok(schema.includes('revoke all on public.subscriptions from public, anon, authenticated;'));
+  });
+
+  test('Gemini personal-context requests require a billing-backed project flag', () => {
+    const coach = readFileSync('api/coach.js', 'utf8');
+    assert.ok(coach.includes("GEMINI_PAID_DATA_PROCESSING !== 'true'"));
+    assert.ok(coach.includes('GEMINI_PAID_PROCESSING_REQUIRED'));
   });
 
   test('user_workspaces isolates records by auth.uid()', () => {

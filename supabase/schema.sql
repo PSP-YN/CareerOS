@@ -30,8 +30,8 @@ create policy "Users can update their own workspace"
   using ((select auth.uid()) = user_id)
   with check ((select auth.uid()) = user_id);
 
+revoke all on public.user_workspaces from public, anon, authenticated;
 grant select, insert, update on public.user_workspaces to authenticated;
-revoke all on public.user_workspaces from anon;
 
 comment on table public.user_workspaces is
   'Private per-user CareerOS workspace payload. RLS restricts access to the owning auth user.';
@@ -101,8 +101,7 @@ drop policy if exists "Users can read their own subscription" on public.subscrip
 create policy "Users can read their own subscription"
   on public.subscriptions for select to authenticated
   using ((select auth.uid()) = user_id);
-revoke all on public.subscriptions from anon;
-grant select on public.subscriptions to authenticated;
+revoke all on public.subscriptions from public, anon, authenticated;
 revoke insert, update, delete on public.subscriptions from anon, authenticated;
 create index if not exists subscriptions_user_status_idx
   on public.subscriptions (user_id, status, updated_at desc);

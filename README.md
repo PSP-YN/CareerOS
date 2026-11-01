@@ -61,3 +61,8 @@ CareerOS is currently in a free early-access pilot. No payment checkout is enabl
 Our goal is to make career development more structured, practical and accountable: one place to understand the destination, identify the work required, build credible evidence and manage the steps that follow.
 
 **CareerOS — Decide with evidence. Prepare with purpose.**
+
+
+## Gemini data-processing requirement
+
+CareerOS sends candidate-specific context to Gemini only when `GEMINI_PAID_DATA_PROCESSING=true` is explicitly configured by the operator after confirming that the Google Cloud project has active billing. The server blocks Gemini requests by default. Do not enable this flag for an unpaid Gemini API project: Google's unpaid-service terms permit submitted prompts and responses to be used to improve Google products and allow human review, and instruct developers not to submit personal, sensitive, confidential or proprietary information. See the [Gemini API Additional Terms](https://ai.google.dev/gemini-api/terms).
