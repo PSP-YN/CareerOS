@@ -99,14 +99,14 @@ export default async function handler(req, res) {
     let upstream;
     try {
       upstream = await fetch(
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent',
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY },
           signal: controller.signal,
           body: JSON.stringify({
             contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { responseMimeType: 'application/json', temperature: 0.25, maxOutputTokens: 900 }
+            generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 900 }
           })
         }
       );
@@ -164,7 +164,7 @@ export default async function handler(req, res) {
         next_actions: Array.isArray(result.next_actions) ? result.next_actions.filter(x => typeof x === 'string').slice(0, 5).map(x => x.slice(0, 300)) : [],
         caveats: Array.isArray(result.caveats) ? result.caveats.filter(x => typeof x === 'string').slice(0, 4).map(x => x.slice(0, 300)) : []
       },
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.8-flash',
       quota: { dailyLimit }
     });
   } catch {
