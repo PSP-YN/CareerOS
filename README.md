@@ -1,73 +1,57 @@
 # CareerOS
 
-CareerOS is a career planning workspace for students, fresh graduates and early-career professionals. It connects target-role definition, self-assessed skill gaps, learning milestones, interview practice and application tracking.
+**CareerOS is a career-development platform built to turn professional ambition into measurable, evidence-led progress.**
 
-**Production domain:** https://careeros-intelligence.vercel.app  
-**Repository:** https://github.com/PSP-YN/CareerOS
+[Explore CareerOS](https://careeros-intelligence.vercel.app) · [Open the workspace](https://careeros-intelligence.vercel.app/app) · [About the platform](https://careeros-intelligence.vercel.app/about)
 
-## Product surfaces
-- Public marketing website with structured product information and FAQ.
-- Private career workspace at /app.
-- Pricing and proposed subscription tiers at /pricing.
-- Career pivot guide at /career-pivot-guide.
-- About, privacy and terms pages.
+## Our purpose
 
-## Core features
-- Career profile and project evidence.
-- Resume Studio with live ATS-readable preview, text export, browser print/PDF and transparent job-description skill coverage.
-- Skill gap analysis and job-description keyword extraction from user-provided text.
-- Application pipeline with editable stages, job links, applied dates and follow-up dates.
-- Role-specific learning roadmaps with milestone progress tracking.
-- Editable templates for AI/ML, full-stack, backend, frontend, data analyst, cybersecurity and product roles.
-- Seven interview rounds: aptitude, coding, technical, system design, case study, behavioral and HR, each with a dedicated question bank and local practice rubric.
-- Deterministic interview feedback.
-- Optional Gemini interview, career-direction and roadmap reviews with separate explicit consent, authenticated requests and a Postgres-enforced daily quota.
-- Guest mode with browser-local storage, JSON export, guest-to-cloud data merge and account deletion endpoint (account deletion requires the server-side service key and recent sign-in).
-- Supabase Google OAuth and per-user workspace sync (requires the Google provider to be enabled and environment setup).
-- Razorpay subscription integration with signed webhooks, server-side entitlements and self-service end-of-cycle cancellation (requires merchant account, plan IDs, webhook and test-mode verification).
-- AdSense slot loader (disabled until publisher approval and IDs are configured).
+Career preparation is fragmented. People are expected to choose a direction, understand the skills a role requires, decide what to learn, demonstrate their ability, prepare for interviews and manage applications—often across disconnected tools.
 
-## Local preview
-Run the static frontend:
-```bash
-python3 -m http.server 4173
-```
-Open http://localhost:4173. API routes require the Vercel runtime; for full local API testing use Vercel CLI and local environment variables.
+CareerOS brings those activities into one connected workspace. It is designed to help students, graduates, career changers and working professionals make informed decisions and follow through with practical evidence.
 
-## Supabase setup
-Follow [docs/SETUP_SUPABASE.md](docs/SETUP_SUPABASE.md), then run [supabase/schema.sql](supabase/schema.sql) in Supabase SQL Editor. The schema enables RLS for per-user workspace data and subscription metadata, plus a server-only daily AI quota RPC.
+## The CareerOS experience
 
-## Vercel environment variables
-Required for Google sign-in and cloud sync:
-- SUPABASE_URL
-- SUPABASE_ANON_KEY (or SUPABASE_PUBLISHABLE_KEY)
+- **Career direction** — define a target role, experience level, timeline and professional objective.
+- **Skill intelligence** — assess current capabilities, compare them with target levels and identify priorities.
+- **Actionable development** — turn a role goal into an editable learning and portfolio roadmap.
+- **Resume Studio** — create an evidence-led resume from real experience, education, projects and skills.
+- **Interview Lab** — practise aptitude, coding, technical, system design, case study, behavioral and HR interviews.
+- **Opportunity tracking** — organise applications, stages, dates, notes and follow-ups.
+- **Optional AI coaching** — request Gemini-powered career, roadmap and interview feedback when configured and explicitly enabled.
+- **Personal workspace** — start in guest mode or sign in for private, account-based cloud synchronisation.
 
-Required for authenticated AI coaching:
-- SUPABASE_SERVICE_ROLE_KEY (server-only)
-- GEMINI_API_KEY (server-only)
+## What makes the platform different
 
-Required for Razorpay subscriptions:
-- RAZORPAY_KEY_ID
-- RAZORPAY_KEY_SECRET (server-only)
-- RAZORPAY_PRO_PLAN_ID
-- RAZORPAY_PLUS_PLAN_ID
-- RAZORPAY_WEBHOOK_SECRET (server-only)
+1. **Evidence over assumptions.** A new workspace does not pretend that a user has skills, achievements or completed milestones they have not entered.
+2. **Action over generic advice.** Recommendations should lead to a specific skill, milestone, work sample or next step.
+3. **Transparency over inflated scores.** Readiness indicators are directional and explain their inputs; they are not hiring predictions.
+4. **Privacy and user control.** AI assistance is opt-in, account data is access-controlled, and users remain responsible for the information they submit.
+5. **One connected journey.** Career direction, development, proof, preparation and opportunity management belong in the same workflow.
 
-Optional after AdSense approval:
-- ADSENSE_CLIENT_ID
-- ADSENSE_HOME_SLOT_ID
-- ADSENSE_GUIDE_SLOT_ID
+## Built for people at different career stages
 
-Never commit actual secrets. Never expose the Supabase service-role key or Razorpay secret in client-side code.
+CareerOS supports students building their first professional profile, graduates preparing for entry-level roles, professionals changing direction and candidates preparing for a more demanding interview process. Role templates provide a starting point; users can edit their skills, milestones and evidence to reflect their actual goals.
 
-## Monetization
-See [docs/MONETIZATION.md](docs/MONETIZATION.md). Proposed tiers are Explore (free), Pro (₹299/month) and Career Plus (₹699/month). Paid checkout is not live until all Razorpay configuration and end-to-end tests are complete. Ads remain disabled until AdSense approval and consent configuration.
+## Trust and product boundaries
 
-## Discoverability
-See [docs/SEO_AEO_GEO.md](docs/SEO_AEO_GEO.md). SEO/AEO/GEO improve machine-readable information and content quality but do not guarantee search rankings or AI citations.
+CareerOS is a planning and practice platform—not a recruiter, placement agency or employer. It does not guarantee interviews, employment, salary outcomes or certification. Readiness indicators and deterministic interview rubrics are advisory rather than independently validated hiring assessments. Job-description analysis works on text supplied by the user and should be checked against current employer requirements.
 
-## Important limitations
-- CareerOS does not guarantee jobs, interviews, salary outcomes or placement.
-- Readiness scores and interview feedback are advisory, not validated hiring assessments.
-- Job description analysis extracts skill signals from user-provided text; it does not scrape job boards or provide live labour-market statistics.
-- Legal pages are launch drafts and must be completed with the operator's real legal identity and contact details.
+Gemini coaching is optional. When a user explicitly requests a review and gives consent, the selected context is sent to Google's Gemini service. The application keeps the Gemini API key on the server; it must never be embedded in the public website.
+
+Paid plans and payment processing remain subject to launch configuration and end-to-end verification. Proposed prices should not be interpreted as an active subscription offer.
+
+## Explore the platform
+
+- [Product overview](https://careeros-intelligence.vercel.app/)
+- [About CareerOS](https://careeros-intelligence.vercel.app/about)
+- [Career pivot guide](https://careeros-intelligence.vercel.app/career-pivot-guide)
+- [Plans and availability](https://careeros-intelligence.vercel.app/pricing)
+- [Privacy notice](https://careeros-intelligence.vercel.app/privacy)
+- [Terms of use](https://careeros-intelligence.vercel.app/terms)
+
+## Company direction
+
+Our goal is to make career development more structured, practical and accountable: one place to understand the destination, identify the work required, build credible evidence and manage the steps that follow.
+
+**CareerOS — Career intelligence, with a plan.**
