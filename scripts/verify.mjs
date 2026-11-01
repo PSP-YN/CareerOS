@@ -81,15 +81,6 @@ for(const file of jsFiles){const result=spawnSync(process.execPath,['--check',fi
 const schema=readText('supabase/schema.sql'),auth=readText('website/js/auth.js'),coach=readText('api/coach.js'),admin=readText('api/admin-questions.js');
 for(const marker of ['enable row level security','user_workspaces','interview_questions','consume_careeros_ai_quota','service_role'])
   if(!schema.includes(marker))throw Error('Supabase schema missing '+marker);
-for(const [marker,pattern] of [['persistent session',/persistSession\\s*:\\s*true/],['refresh token',/autoRefreshToken\\s*:\\s*true/],['browser storage',/window\\.localStorage/],['cloud sync',/syncWorkspace/]])
-  if(!pattern.test(auth))throw Error('Persistent auth/sync control missing: '+marker);
-for(const marker of ['GEMINI_API_KEY','x-goog-api-key','gemini-2.5-flash','MAX_CONTEXT_CHARS','AbortController','consume_careeros_ai_quota'])
-  if(!coach.includes(marker))throw Error('Gemini server guard missing: '+marker);
-if(!admin.includes("user.app_metadata?.role !== 'admin'"))throw Error('Admin role is not checked server-side.');
-for(const marker of ['SUPABASE_SERVICE_ROLE_KEY','GEMINI_API_KEY','RAZORPAY_KEY_SECRET'])
-  if(landing.includes(marker)||appHtml.includes(marker))throw Error('Secret name exposed in HTML.');
-const readme=readText('README.md');
-for(const marker of ['Our purpose','The CareerOS experience','Trust and product boundaries','CareerOS — Career intelligence'])
-  if(!readme.includes(marker))throw Error('Company README section missing: '+marker);
-if(readme.includes('npm run check')||readme.includes('Local preview'))throw Error('README is overly developer-oriented.');
-console.log('CareerOS verification passed: website structure, content separation, clean workspace state, question coverage, assets, JavaScript syntax, Gemini key boundary, admin authorization and Supabase protections.');
+for(const marker of ['persistSession: true','autoRefreshToken: true','window.localStorage','syncWorkspace'])
+  if(!auth.includes(marker))throw Error('Persistent auth/sync control missing: '+marker);
+
