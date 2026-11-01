@@ -49,8 +49,6 @@ if(!readText('website/admin.html').includes('href="#adminMain"') || !readText('w
   throw Error('Admin page needs a keyboard-accessible skip link and main landmark.');
 if(!readText('website/assets/styles.css').includes('.skip-link:focus'))
   throw Error('Skip links must become visible when keyboard-focused.');
-if(!schema.includes('revoke all on public.subscriptions from anon;'))
-  throw Error('Anonymous role must not have direct subscription table privileges.');
 for(const id of ['overview','profile','resume','skills','roadmap','interview','applications','signinGoogle','roleTemplate','applyRoleTemplate','qtype','evaluate','addapp','resumePreview','downloadResume','printResume'])
   if(!ids.includes(id)) throw Error('Missing workspace control: '+id);
 if(/<script\b(?![^>]*\bsrc=)(?![^>]*application\/ld\+json)[^>]*>[\s\S]*?\S[\s\S]*?<\/script>/i.test(appHtml))
@@ -87,6 +85,8 @@ for(const page of ['website/index.html','website/app.html','website/admin.html',
 const jsFiles=[...staticFiles.filter(x=>x.endsWith('.js')),...['api/coach.js','api/config.js','api/questions.js','api/admin-questions.js','api/delete-account.js','api/razorpay-webhook.js','api/create-subscription.js','api/verify-subscription.js','api/cancel-subscription.js']];
 for(const file of jsFiles){const result=spawnSync(process.execPath,['--check',file],{encoding:'utf8'});if(result.status!==0)throw Error(file+': '+result.stderr);}
 const schema=readText('supabase/schema.sql'),auth=readText('website/js/auth.js'),coach=readText('api/coach.js'),admin=readText('api/admin-questions.js');
+if(!schema.includes('revoke all on public.subscriptions from anon;'))
+  throw Error('Anonymous role must not have direct subscription table privileges.');
 for(const marker of ['enable row level security','user_workspaces','interview_questions','consume_careeros_ai_quota','service_role'])
   if(!schema.includes(marker))throw Error('Supabase schema missing '+marker);
 for(const marker of ['persistSession: true','autoRefreshToken: true','window.localStorage','syncWorkspace'])
