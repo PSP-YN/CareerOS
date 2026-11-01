@@ -43,6 +43,14 @@ if(Object.keys(content.roles).length<7) throw Error('Career-role templates are m
 
 const ids=[...appHtml.matchAll(/\bid="([^"]+)"/g)].map(x=>x[1]);
 if(new Set(ids).size!==ids.length) throw Error('Duplicate IDs in workspace HTML.');
+if(!appHtml.includes('href="#mainContent"') || !appHtml.includes('<main id="mainContent" tabindex="-1">') || !appHtml.includes('id="feedback" role="status" aria-live="polite"'))
+  throw Error('Workspace needs a skip link, main landmark and live interview feedback.');
+if(!readText('website/admin.html').includes('href="#adminMain"') || !readText('website/admin.html').includes('id="adminMain" tabindex="-1"'))
+  throw Error('Admin page needs a keyboard-accessible skip link and main landmark.');
+if(!readText('website/assets/styles.css').includes('.skip-link:focus'))
+  throw Error('Skip links must become visible when keyboard-focused.');
+if(!schema.includes('revoke all on public.subscriptions from anon;'))
+  throw Error('Anonymous role must not have direct subscription table privileges.');
 for(const id of ['overview','profile','resume','skills','roadmap','interview','applications','signinGoogle','roleTemplate','applyRoleTemplate','qtype','evaluate','addapp','resumePreview','downloadResume','printResume'])
   if(!ids.includes(id)) throw Error('Missing workspace control: '+id);
 if(/<script\b(?![^>]*\bsrc=)(?![^>]*application\/ld\+json)[^>]*>[\s\S]*?\S[\s\S]*?<\/script>/i.test(appHtml))
