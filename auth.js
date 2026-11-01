@@ -3,6 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const $ = (id) => document.getElementById(id);
 const signIn = $('signinGoogle');
 const signOut = $('signout');
+const adminConsole = $('adminConsole');
 const status = $('accountStatus');
 const banner = $('authBanner');
 const bannerText = $('authMessage');
@@ -75,6 +76,7 @@ function installAccountTools() {
 function showSignedIn(session) {
   currentSession = session;
   const signedIn = !!session?.user;
+  if (adminConsole) adminConsole.hidden = !signedIn || session.user.app_metadata?.role !== 'admin';
   if (signedIn) {
     status.textContent = session.user.user_metadata?.full_name || session.user.email || 'Signed in';
     signIn.hidden = true;
