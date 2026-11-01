@@ -58,6 +58,12 @@ export default async function handler(req, res) {
   if (!process.env.GEMINI_API_KEY) {
     return res.status(503).json({ error: 'Gemini is not configured. Local interview feedback remains available.' });
   }
+  if (process.env.GEMINI_PAID_DATA_PROCESSING !== 'true') {
+    return res.status(503).json({
+      code: 'GEMINI_PAID_PROCESSING_REQUIRED',
+      error: 'AI review is paused. CareerOS will not send personal career data to the Gemini unpaid tier. Enable AI only with a Google Cloud project that has active billing.'
+    });
+  }
 
   // CareerOS is operating as a free prototype: no paid-plan lookup or billing dependency.
   // Enforce one server-side free allowance for every signed-in account.
