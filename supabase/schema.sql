@@ -63,7 +63,7 @@ create or replace function public.consume_careeros_ai_quota(
 ) returns boolean
 language plpgsql
 security definer
-set search_path = public, pg_temp
+set search_path = pg_catalog, public
 as $$
 declare
   new_count integer;
@@ -124,7 +124,7 @@ create or replace function public.upsert_careeros_subscription(
 ) returns boolean
 language plpgsql
 security definer
-set search_path = public, pg_temp
+set search_path = pg_catalog, public
 as $
 declare
   did_update boolean := false;
