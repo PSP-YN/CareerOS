@@ -114,6 +114,18 @@ describe('Security Audit: Database RLS & Privileges (supabase/schema.sql)', () =
     assert.ok(schema.includes('alter table public.subscriptions enable row level security;'));
   });
 
+  test('workspace and legacy subscription grants follow least privilege', () => {
+    assert.ok(schema.includes('revoke all on public.user_workspaces from public, anon, authenticated;'));
+    assert.ok(schema.includes('grant select, insert, update on public.user_workspaces to authenticated;'));
+    assert.ok(schema.includes('revoke all on public.subscriptions from public, anon, authenticated;'));
+  });
+
+  test('Gemini personal-context requests require a billing-backed project flag', () => {
+    const coach = readFileSync('api/coach.js', 'utf8');
+    assert.ok(coach.includes("GEMINI_PAID_DATA_PROCESSING !== 'true'"));
+    assert.ok(coach.includes('GEMINI_PAID_PROCESSING_REQUIRED'));
+  });
+
   test('user_workspaces isolates records by auth.uid()', () => {
     assert.ok(schema.includes('(select auth.uid()) = user_id'));
     assert.ok(schema.includes('revoke all on public.user_workspaces from anon;'));
