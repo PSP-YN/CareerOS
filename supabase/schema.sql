@@ -192,9 +192,15 @@ create table if not exists public.interview_questions (
   updated_at timestamptz not null default now()
 );
 alter table public.interview_questions enable row level security;
+drop policy if exists "No direct client access to interview questions" on public.interview_questions;
+create policy "No direct client access to interview questions"
+  on public.interview_questions for all to anon, authenticated
+  using (false) with check (false);
 revoke all on public.interview_questions from anon, authenticated;
 grant select, insert, update, delete on public.interview_questions to service_role;
-create index if not exists interview_questions_round_active_idx
-  on public.interview_questions(round, is_active, difficulty);
+create index if not exists interview_questions_created_by_idx
+  on public.interview_questions(created_by);
+create index if not exists interview_questions_active_created_idx
+  on public.interview_questions(is_active, created_at desc);
 comment on table public.interview_questions is
   'CareerOS curated interview question bank. All access is mediated by authenticated server API routes; no client role can query this table directly.';
