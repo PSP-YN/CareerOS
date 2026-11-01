@@ -1,7 +1,7 @@
 # Project overview
 CareerOS: Evidence-backed career intelligence, pivot planning, interview lab, and resume workspace.
 
-- **Stack:** Node.js (ESM), Vanilla JS/HTML/CSS (Vercel Serverless + static frontend in `website/`), Supabase (PostgreSQL with RLS), Razorpay (billing webhooks), Google Gemini (AI coaching).
+- **Stack:** Node.js (ESM), Vanilla JS/HTML/CSS (Vercel Serverless + static frontend in `website/`), Supabase (PostgreSQL with RLS), Google Gemini (AI coaching). Payments are intentionally disabled for the free prototype.
 - **Package manager:** npm
 - **Entry points:** `website/index.html` (marketing landing), `website/app.html` (interactive workspace), `api/*.js` (serverless functions)
 
@@ -11,7 +11,7 @@ CareerOS: Evidence-backed career intelligence, pivot planning, interview lab, an
 
 ## Structure
 - `website/`: Static frontend pages (`index.html`, `app.html`, `admin.html`), assets, data (`career-content.js`), and scripts (`app.js`, `auth.js`, `ai.js`, `billing.js`).
-- `api/`: Vercel serverless API handlers (`coach.js`, `config.js`, `create-subscription.js`, `verify-subscription.js`, `cancel-subscription.js`, `delete-account.js`, `razorpay-webhook.js`, `questions.js`, `admin-questions.js`).
+- `api/`: Vercel serverless API handlers for configuration, Gemini coaching, account deletion, interview questions and administration. Legacy payment handlers remain dormant and are not part of the free prototype.
 - `supabase/`: Schema migrations, stored procedures, RLS policies (`schema.sql`).
 - `test/`: Automated test suite covering API routes, security posture, headers, and core logic.
 - `scripts/`: Verification scripts (`verify.mjs`).
