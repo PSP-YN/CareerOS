@@ -331,7 +331,7 @@ window.addEventListener('careeros:state-changed', scheduleSync);
   showSignedIn(null);
   installAccountTools();
   try {
-    const response = await fetch('/api/config', { cache: 'no-store' });
+    const response = await fetch('/api/config', { cache: 'default' });
     if (!response.ok) throw new Error('Supabase public configuration is missing.');
     const config = await response.json();
     if (!config.supabaseUrl || !config.supabaseAnonKey) throw new Error('Supabase public configuration is incomplete.');
