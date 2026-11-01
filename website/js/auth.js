@@ -3,6 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const $ = (id) => document.getElementById(id);
 const signIn = $('signinGoogle');
 const signOut = $('signout');
+const adminConsole = $('adminConsole');
 const status = $('accountStatus');
 const banner = $('authBanner');
 const bannerText = $('authMessage');
@@ -75,6 +76,7 @@ function installAccountTools() {
 function showSignedIn(session) {
   currentSession = session;
   const signedIn = !!session?.user;
+  if (adminConsole) adminConsole.hidden = !signedIn || session.user.app_metadata?.role !== 'admin';
   if (signedIn) {
     status.textContent = session.user.user_metadata?.full_name || session.user.email || 'Signed in';
     signIn.hidden = true;
@@ -182,8 +184,10 @@ function mergeWorkspace(cloud, local) {
   if (String(localProfile.jd || '').trim()) profile.jd = localProfile.jd;
   const cloudDone = Array.isArray(c.done) ? c.done : [];
   const done = Array.from({ length: Math.max(cloudDone.length, localDone.length) }, (_,i) => !!cloudDone[i] || !!localDone[i]);
-  const answers = unique([...(Array.isArray(c.answers) ? c.answers : []), ...(Array.isArray(l.answers) ? l.answers : [])],
-    item => item.id || item.at + '|' + item.question);
+  const answers = roleChanged
+    ? (Array.isArray(l.answers) ? l.answers : [])
+    : unique([...(Array.isArray(c.answers) ? c.answers : []), ...(Array.isArray(l.answers) ? l.answers : [])],
+      item => item.id || item.at + '|' + item.question);
   const apps = unique([...(Array.isArray(c.apps) ? c.apps : []), ...(Array.isArray(l.apps) ? l.apps : [])],
     item => item.id || item.company + '|' + item.role + '|' + item.status);
   return {
@@ -193,7 +197,7 @@ function mergeWorkspace(cloud, local) {
     done: roleChanged ? localDone : (progressChanged ? done : (cloudDone.length ? cloudDone : localDone)),
     answers,
     apps,
-    sessions: Math.max(Number(c.sessions) || 0, Number(l.sessions) || 0)
+    sessions: roleChanged ? (Number(l.sessions) || 0) : Math.max(Number(c.sessions) || 0, Number(l.sessions) || 0)
   };
 }
 
@@ -211,11 +215,13 @@ async function syncWorkspace() {
       // Merge instead of blindly replacing: signing in must not silently discard guest work.
       const merged = mergeWorkspace(data.payload, local);
       window.CareerOSState.replace(merged);
-      const { error: saveError } = await supabase.from('user_workspaces').upsert({
-        user_id: userId, payload: merged, updated_at: new Date().toISOString()
-      }, { onConflict: 'user_id' });
-      if (saveError) throw saveError;
-      notify('Cloud and this-device workspace data have been combined.');
+      // Avoid a write on every login when the local and cloud workspaces already match.
+      if (JSON.stringify(merged) !== JSON.stringify(data.payload)) {
+        const { error: saveError } = await supabase.from('user_workspaces').upsert({
+          user_id: userId, payload: merged, updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id' });
+        if (saveError) throw saveError;
+      }
     } else {
       const { error: saveError } = await supabase.from('user_workspaces').upsert({
         user_id: userId, payload: local, updated_at: new Date().toISOString()
@@ -253,7 +259,7 @@ function scheduleSync() {
       syncing = false;
       if (syncAgain) { syncAgain = false; scheduleSync(); }
     }
-  }, 700);
+  }, 1100);
 }
 
 async function deleteAccount() {
@@ -296,7 +302,7 @@ signIn?.addEventListener('click', async () => {
   try {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin + '/app' }
+      options: { redirectTo: window.location.origin + '/app', queryParams: { prompt: 'select_account' } }
     });
     if (error) throw error;
   } catch (error) {
@@ -327,21 +333,23 @@ window.addEventListener('careeros:state-changed', scheduleSync);
   showSignedIn(null);
   installAccountTools();
   try {
-    const response = await fetch('/api/config', { cache: 'no-store' });
+    const response = await fetch('/api/config', { cache: 'default' });
     if (!response.ok) throw new Error('Supabase public configuration is missing.');
     const config = await response.json();
     if (!config.supabaseUrl || !config.supabaseAnonKey) throw new Error('Supabase public configuration is incomplete.');
     supabase = createClient(config.supabaseUrl, config.supabaseAnonKey, {
-      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storage: window.localStorage }
     });
+    // Supabase persists the refresh-token session in browser storage. Resolve it locally,
+    // render the signed-in state immediately, and let cloud reconciliation run in the background.
     const { data: { session } } = await supabase.auth.getSession();
     showSignedIn(session);
-    if (session) await syncWorkspace();
     supabase.auth.onAuthStateChange((event, sessionValue) => {
       showSignedIn(sessionValue);
-      if (event === 'SIGNED_IN' && sessionValue) window.setTimeout(syncWorkspace, 0);
+      if (event === 'SIGNED_IN' && sessionValue) window.setTimeout(() => { void syncWorkspace(); }, 0);
       if (event === 'SIGNED_OUT') notify('You are signed out.');
     });
+    if (session) void syncWorkspace();
   } catch (error) {
     console.info('CareerOS authentication configuration:', error.message);
     status.textContent = 'Guest workspace';

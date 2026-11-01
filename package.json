@@ -1,12 +1,13 @@
 {
   "name": "careeros",
   "version": "1.0.0",
-  "private": false,
+  "private": true,
   "type": "module",
   "engines": {
     "node": ">=20"
   },
   "scripts": {
-    "check": "node scripts/verify.mjs"
+    "check": "node scripts/verify.mjs",
+    "test": "npm run check"
   }
 }
