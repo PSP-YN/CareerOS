@@ -101,6 +101,7 @@ drop policy if exists "Users can read their own subscription" on public.subscrip
 create policy "Users can read their own subscription"
   on public.subscriptions for select to authenticated
   using ((select auth.uid()) = user_id);
+revoke all on public.subscriptions from anon;
 grant select on public.subscriptions to authenticated;
 revoke insert, update, delete on public.subscriptions from anon, authenticated;
 create index if not exists subscriptions_user_status_idx
