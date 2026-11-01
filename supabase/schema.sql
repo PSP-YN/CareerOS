@@ -177,3 +177,24 @@ grant execute on function public.upsert_careeros_subscription(uuid,text,text,tex
 -- Subscription cancellation scheduling metadata for self-service billing management.
 alter table public.subscriptions add column if not exists cancel_at_cycle_end boolean not null default false;
 alter table public.subscriptions add column if not exists cancellation_requested_at timestamptz;
+
+
+-- Curated interview question bank. Access is exclusively through server-side API routes.
+create table if not exists public.interview_questions (
+  id uuid primary key default gen_random_uuid(),
+  round text not null check (round in ('aptitude','coding','technical','system_design','case_study','behavioral','hr')),
+  question text not null check (char_length(question) between 20 and 2000),
+  rubric text not null check (char_length(rubric) between 10 and 2000),
+  difficulty text not null default 'intermediate' check (difficulty in ('beginner','intermediate','advanced')),
+  is_active boolean not null default true,
+  created_by uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+alter table public.interview_questions enable row level security;
+revoke all on public.interview_questions from anon, authenticated;
+grant select, insert, update, delete on public.interview_questions to service_role;
+create index if not exists interview_questions_round_active_idx
+  on public.interview_questions(round, is_active, difficulty);
+comment on table public.interview_questions is
+  'CareerOS curated interview question bank. All access is mediated by authenticated server API routes; no client role can query this table directly.';
