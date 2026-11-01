@@ -7,8 +7,8 @@ const required = [
   'website/assets/styles.css','website/assets/favicon.svg','website/assets/logo.svg',
   'website/assets/manifest.webmanifest','website/assets/admin.css',
   'website/js/app.js','website/js/auth.js','website/js/ai.js','website/js/admin.js',
-  'website/js/billing.js','website/js/ads.js','website/data/career-content.js',
-  'website/data/extended-questions.js','api/coach.js','api/config.js','api/questions.js',
+  'website/js/billing.js','website/js/ads.js','website/js/interview-engine.js','website/js/decision-studio.js','website/data/career-content.js',
+  'website/data/extended-questions.js','website/data/full-scale-questions.js','api/coach.js','api/config.js','api/questions.js',
   'api/admin-questions.js','api/delete-account.js','api/razorpay-webhook.js',
   'supabase/schema.sql','README.md','vercel.json'
 ];
@@ -24,6 +24,10 @@ const extendedSource=readText('website/data/extended-questions.js');
 const extendedMatch=extendedSource.match(/window\.CareerOSQuestionBank\s*=\s*(\{[\s\S]*\});/);
 if(!extendedMatch) throw Error('Extended question bank is missing.');
 const extended=JSON.parse(extendedMatch[1].replace(/(^|\n)\s*([a-z_]+)\s*:/g,'$1"$2":'));
+const fullScaleSource=readText('website/data/full-scale-questions.js');
+const fullScaleMatch=fullScaleSource.match(/window\.CareerOSFullScaleQuestions\s*=\s*(\{[\s\S]*\});/);
+if(!fullScaleMatch) throw Error('Full-scale interview question bank is missing.');
+const fullScale=JSON.parse(fullScaleMatch[1]);
 
 if(!app.includes('profile:{role:\'\',experience:\'\',timeline:\'\'')||!app.includes('skills:[],done:[]'))
   throw Error('New workspaces must start without fabricated profile, skill or milestone data.');
@@ -39,6 +43,14 @@ for(const round of ['aptitude','coding','technical','system_design','case_study'
   if(!Array.isArray(content.questions[round])||content.questions[round].length<5) throw Error('Question pool too small: '+round);
 for(const round of ['aptitude','coding','technical'])
   if(!Array.isArray(extended[round])||extended[round].length<20) throw Error('Expanded question pool missing: '+round);
+for(const round of ['aptitude','coding','technical','system_design','case_study','behavioral','hr'])
+  if(!Array.isArray(fullScale[round])||fullScale[round].length<20) throw Error('Full-scale question pool missing: '+round);
+if(!appHtml.includes('/data/full-scale-questions.js')||!appHtml.includes('/js/interview-engine.js')||!appHtml.includes('/js/decision-studio.js'))
+  throw Error('Full-scale interview and decision studio scripts must be loaded by the workspace.');
+if(!appHtml.includes('data-tab="decisions"')||!appHtml.includes('id="decisions"')||!appHtml.includes('id="startFullMock"'))
+  throw Error('Decision Studio and full mock interview controls are required.');
+if(appHtml.includes('PS 05')||appHtml.includes('Career Pivot Coach'))
+  throw Error('Hackathon problem-statement branding must not appear in the product workspace.');
 if(Object.keys(content.roles).length<7) throw Error('Career-role templates are missing.');
 
 const ids=[...appHtml.matchAll(/\bid="([^"]+)"/g)].map(x=>x[1]);
