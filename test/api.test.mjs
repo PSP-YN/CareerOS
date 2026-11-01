@@ -162,6 +162,24 @@ describe('API: /api/coach', () => {
     assert.equal(res.statusCode, 413);
   });
 
+  test('rejects Gemini data transfer without explicit consent', async () => {
+    restoreFetch = mockFetch(async url => {
+      if (url.includes('/auth/v1/user')) {
+        return { ok: true, json: async () => ({ id: 'usr-123' }) };
+      }
+      return { ok: true };
+    });
+    const req = createMockReq({
+      method: 'POST',
+      headers: { authorization: 'Bearer good-token' },
+      body: { task: 'interview_feedback', context: { answer: 'A sufficiently detailed interview answer.' } }
+    });
+    const res = createMockRes();
+    await coachHandler(req, res);
+    assert.equal(res.statusCode, 400);
+    assert.match(res.body.error, /explicit consent/i);
+  });
+
   test('returns 429 when daily quota is exhausted', async () => {
     restoreFetch = mockFetch(async url => {
       if (url.includes('/auth/v1/user')) {
@@ -175,7 +193,7 @@ describe('API: /api/coach', () => {
     const req = createMockReq({
       method: 'POST',
       headers: { authorization: 'Bearer good-token' },
-      body: { task: 'interview_feedback', context: { answer: 'valid answer' } }
+      body: { task: 'interview_feedback', context: { answer: 'valid answer' }, consent: true }
     });
     const res = createMockRes();
     await coachHandler(req, res);
@@ -218,7 +236,7 @@ describe('API: /api/coach', () => {
     const req = createMockReq({
       method: 'POST',
       headers: { authorization: 'Bearer good-token' },
-      body: { task: 'interview_feedback', context: { answer: 'I used a hash map to achieve O(N) complexity.' } }
+      body: { task: 'interview_feedback', context: { answer: 'I used a hash map to achieve O(N) complexity.' }, consent: true }
     });
     const res = createMockRes();
     await coachHandler(req, res);
