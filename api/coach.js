@@ -118,13 +118,43 @@ export default async function handler(req, res) {
     } finally {
       clearTimeout(timeout);
     }
-    if (!upstream.ok) return res.status(502).json({ error: 'AI provider request failed. Local feedback remains available.' });
-    const data = await upstream.json();
+    const providerText = await upstream.text();
+    let data = {};
+    try { data = providerText ? JSON.parse(providerText) : {}; } catch { data = {}; }
+    if (!upstream.ok) {
+      const providerMessage = String(data?.error?.message || '').slice(0, 500);
+      const providerStatus = Number(upstream.status);
+      console.error('[CareerOS Gemini] Provider rejected request', {
+        status: providerStatus,
+        reason: String(data?.error?.status || data?.error?.code || 'UNKNOWN').slice(0, 80),
+        message: providerMessage
+      });
+      if (providerStatus === 401 || providerStatus === 403) {
+        return res.status(502).json({ code: 'GEMINI_KEY_REJECTED', error: 'Google rejected the Gemini API key. Check that the key is valid, the Generative Language API is enabled, and the key is permitted to call Gemini.' });
+      }
+      if (providerStatus === 404) {
+        return res.status(502).json({ code: 'GEMINI_MODEL_UNAVAILABLE', error: 'The configured Gemini model is unavailable for this API key or project.' });
+      }
+      if (providerStatus === 429) {
+        return res.status(503).json({ code: 'GEMINI_QUOTA_OR_RATE_LIMIT', error: 'Gemini has reached its current request or token limit. Check the Google AI Studio project quota and try again later.' });
+      }
+      if (providerStatus >= 500) {
+        return res.status(503).json({ code: 'GEMINI_PROVIDER_UNAVAILABLE', error: 'Google Gemini is temporarily unavailable. Local feedback remains available.' });
+      }
+      return res.status(502).json({ code: 'GEMINI_REQUEST_REJECTED', error: 'Google rejected the Gemini request. Check the server-side provider configuration and request limits.' });
+    }
     const output = data.candidates?.[0]?.content?.parts?.map(part => part.text || '').join('').trim();
-    if (!output) return res.status(502).json({ error: 'AI provider returned no usable feedback.' });
+    if (!output) {
+      console.error('[CareerOS Gemini] Empty model response', {
+        promptFeedback: data?.promptFeedback?.blockReason || null,
+        finishReason: data?.candidates?.[0]?.finishReason || null
+      });
+      return res.status(502).json({ code: 'GEMINI_EMPTY_RESPONSE', error: 'Gemini returned no usable feedback. Try again with a shorter answer or more specific context.' });
+    }
     let result;
     try { result = JSON.parse(output); } catch {
-      return res.status(502).json({ error: 'AI provider returned invalid structured feedback.' });
+      console.error('[CareerOS Gemini] Model returned invalid JSON');
+      return res.status(502).json({ code: 'GEMINI_INVALID_RESPONSE', error: 'Gemini returned feedback in an unexpected format. Try again.' });
     }
     return res.status(200).json({
       result: {
