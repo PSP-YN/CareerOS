@@ -55,7 +55,7 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
           cache: 'no-store',
-          body: JSON.stringify({ task, context: getContext() })
+          body: JSON.stringify({ task, context: getContext(), consent: true })
         });
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(payload.error || 'AI review is temporarily unavailable.');
