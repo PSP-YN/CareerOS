@@ -338,7 +338,7 @@ window.addEventListener('careeros:state-changed', scheduleSync);
     const config = await response.json();
     if (!config.supabaseUrl || !config.supabaseAnonKey) throw new Error('Supabase public configuration is incomplete.');
     supabase = createClient(config.supabaseUrl, config.supabaseAnonKey, {
-      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storage: window.localStorage, storageKey: 'careeros-auth-v1' }
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storage: window.localStorage }
     });
     // Supabase persists the refresh-token session in browser storage. Resolve it locally,
     // render the signed-in state immediately, and let cloud reconciliation run in the background.
