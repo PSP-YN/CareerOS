@@ -49,6 +49,9 @@ if(!appHtml.includes('/data/full-scale-questions.js')||!appHtml.includes('/js/in
   throw Error('Full-scale interview and decision studio scripts must be loaded by the workspace.');
 if(!appHtml.includes('data-tab="decisions"')||!appHtml.includes('id="decisions"')||!appHtml.includes('id="startFullMock"'))
   throw Error('Decision Studio and full mock interview controls are required.');
+const authSource=readText('website/js/auth.js');
+if(!authSource.includes('decisions: unique(')||!authSource.includes('mockInterviewHistory: unique('))
+  throw Error('Decision Studio and mock interview history must merge across devices.');
 if(appHtml.includes('PS 05')||appHtml.includes('Career Pivot Coach'))
   throw Error('Hackathon problem-statement branding must not appear in the product workspace.');
 if(Object.keys(content.roles).length<7) throw Error('Career-role templates are missing.');
