@@ -1,7 +1,7 @@
 # CareerOS Automated QA & Security Hardening Report
 
 **Date:** November 1, 2026  
-**Automated CI:** 63 tests passed, 18 suites, 0 failures  
+**Automated CI:** 64 tests expected after consent regression test; previous CI run passed 63 tests, 18 suites, 0 failures  
 **Release commit:** `b8341a7d4a971292e787fe3bc2d9960cc7c0965f`
 
 ---
@@ -25,6 +25,7 @@ This release adds automated regression coverage and targeted security hardening.
 ## 3. Security and reliability changes
 
 - Gemini API key remains server-side and is sent to Google using the `x-goog-api-key` request header, not a URL query parameter.
+- Gemini requests are rejected server-side unless the request includes explicit consent; the UI checkbox remains required as well.
 - Gemini response parsing strips optional Markdown fences, validates object shape, bounds returned fields and reports provider failures with actionable status codes.
 - Free Gemini coaching uses a fixed **10-request daily per-user quota** enforced by the existing Postgres RPC. It no longer queries the `subscriptions` table or depends on paid entitlements.
 - API handlers distinguish missing authentication from missing server configuration.
