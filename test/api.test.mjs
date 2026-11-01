@@ -1,15 +1,10 @@
 import { test, describe, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { createHmac } from 'node:crypto';
 import { createMockReq, createMockRes, mockFetch } from './helpers.mjs';
 
 import configHandler from '../api/config.js';
 import coachHandler from '../api/coach.js';
-import createSubscriptionHandler from '../api/create-subscription.js';
-import verifySubscriptionHandler from '../api/verify-subscription.js';
-import cancelSubscriptionHandler from '../api/cancel-subscription.js';
 import deleteAccountHandler from '../api/delete-account.js';
-import razorpayWebhookHandler from '../api/razorpay-webhook.js';
 import questionsHandler from '../api/questions.js';
 import adminQuestionsHandler from '../api/admin-questions.js';
 
@@ -58,7 +53,7 @@ describe('API: /api/config', () => {
     assert.equal(res.body.supabaseUrl, 'https://valid-project.supabase.co');
   });
 
-  test('reports billingEnabled=true when all Razorpay and Supabase credentials exist', () => {
+  test('keeps billing disabled even if legacy payment variables are present', () => {
     process.env.SUPABASE_URL = 'https://valid-project.supabase.co';
     process.env.SUPABASE_ANON_KEY = 'anon-key';
     process.env.RAZORPAY_KEY_ID = 'rzp_test_123';
@@ -71,8 +66,8 @@ describe('API: /api/config', () => {
     const res = createMockRes();
     configHandler(req, res);
     assert.equal(res.statusCode, 200);
-    assert.equal(res.body.billingEnabled, true);
-  });
+    assert.equal(res.body.billingEnabled, false);
+  });;
 });
 
 describe('API: /api/coach', () => {
@@ -248,224 +243,6 @@ describe('API: /api/coach', () => {
   });
 });
 
-describe('API: /api/create-subscription', () => {
-  const originalEnv = { ...process.env };
-  let restoreFetch;
-
-  beforeEach(() => {
-    process.env.SUPABASE_URL = 'https://test.supabase.co';
-    process.env.SUPABASE_ANON_KEY = 'anon-key';
-    process.env.RAZORPAY_KEY_ID = 'rzp_id';
-    process.env.RAZORPAY_KEY_SECRET = 'rzp_sec';
-    process.env.RAZORPAY_PRO_PLAN_ID = 'plan_pro_123';
-  });
-
-  afterEach(() => {
-    process.env = { ...originalEnv };
-    if (restoreFetch) restoreFetch();
-  });
-
-  test('returns 401 if user is not signed in', async () => {
-    const req = createMockReq({ method: 'POST', body: { plan: 'pro' } });
-    const res = createMockRes();
-    await createSubscriptionHandler(req, res);
-    assert.equal(res.statusCode, 401);
-  });
-
-  test('returns 400 for invalid plan', async () => {
-    restoreFetch = mockFetch(async url => {
-      if (url.includes('/auth/v1/user')) {
-        return { ok: true, json: async () => ({ id: 'usr-1', email: 'test@example.com' }) };
-      }
-      return { ok: true };
-    });
-    const req = createMockReq({
-      method: 'POST',
-      headers: { authorization: 'Bearer tok' },
-      body: { plan: 'invalid_plan' }
-    });
-    const res = createMockRes();
-    await createSubscriptionHandler(req, res);
-    assert.equal(res.statusCode, 400);
-    assert.equal(res.body.error, 'Invalid subscription plan.');
-  });
-
-  test('returns 200 with subscriptionId on valid plan and provider response', async () => {
-    restoreFetch = mockFetch(async url => {
-      if (url.includes('/auth/v1/user')) {
-        return {
-          ok: true,
-          json: async () => ({ id: 'usr-1', email: 'test@example.com', user_metadata: { full_name: 'Test User' } })
-        };
-      }
-      if (url.includes('api.razorpay.com/v1/subscriptions')) {
-        return { ok: true, json: async () => ({ id: 'sub_12345' }) };
-      }
-      return { ok: true };
-    });
-
-    const req = createMockReq({
-      method: 'POST',
-      headers: { authorization: 'Bearer tok' },
-      body: { plan: 'pro' }
-    });
-    const res = createMockRes();
-    await createSubscriptionHandler(req, res);
-    assert.equal(res.statusCode, 200);
-    assert.equal(res.body.subscriptionId, 'sub_12345');
-    assert.equal(res.body.plan, 'pro');
-    assert.equal(res.body.email, 'test@example.com');
-  });
-});
-
-describe('API: /api/verify-subscription', () => {
-  const originalEnv = { ...process.env };
-  let restoreFetch;
-
-  beforeEach(() => {
-    process.env.SUPABASE_URL = 'https://test.supabase.co';
-    process.env.SUPABASE_ANON_KEY = 'anon-key';
-    process.env.RAZORPAY_KEY_SECRET = 'test_secret_123';
-  });
-
-  afterEach(() => {
-    process.env = { ...originalEnv };
-    if (restoreFetch) restoreFetch();
-  });
-
-  test('returns 400 for incomplete or non-string verification data', async () => {
-    restoreFetch = mockFetch(async () => ({ ok: true, json: async () => ({ id: 'usr-1' }) }));
-    const req = createMockReq({
-      method: 'POST',
-      headers: { authorization: 'Bearer tok' },
-      body: { razorpay_payment_id: 1234, razorpay_subscription_id: 'sub_1', razorpay_signature: {} }
-    });
-    const res = createMockRes();
-    await verifySubscriptionHandler(req, res);
-    assert.equal(res.statusCode, 400);
-  });
-
-  test('rejects tampered signature with 400', async () => {
-    restoreFetch = mockFetch(async () => ({ ok: true, json: async () => ({ id: 'usr-1' }) }));
-    const fakeSig = 'a'.repeat(64);
-    const req = createMockReq({
-      method: 'POST',
-      headers: { authorization: 'Bearer tok' },
-      body: {
-        razorpay_payment_id: 'pay_123',
-        razorpay_subscription_id: 'sub_123',
-        razorpay_signature: fakeSig
-      }
-    });
-    const res = createMockRes();
-    await verifySubscriptionHandler(req, res);
-    assert.equal(res.statusCode, 400);
-    assert.equal(res.body.error, 'Payment signature verification failed.');
-  });
-
-  test('accepts valid cryptographic signature and marks webhook_pending', async () => {
-    restoreFetch = mockFetch(async () => ({ ok: true, json: async () => ({ id: 'usr-1' }) }));
-    const paymentId = 'pay_real_999';
-    const subId = 'sub_real_999';
-    const validSig = createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
-      .update(paymentId + '|' + subId)
-      .digest('hex');
-
-    const req = createMockReq({
-      method: 'POST',
-      headers: { authorization: 'Bearer tok' },
-      body: {
-        razorpay_payment_id: paymentId,
-        razorpay_subscription_id: subId,
-        razorpay_signature: validSig
-      }
-    });
-    const res = createMockRes();
-    await verifySubscriptionHandler(req, res);
-    assert.equal(res.statusCode, 200);
-    assert.equal(res.body.verified, true);
-    assert.equal(res.body.status, 'webhook_pending');
-  });
-});
-
-describe('API: /api/cancel-subscription', () => {
-  const originalEnv = { ...process.env };
-  let restoreFetch;
-
-  beforeEach(() => {
-    process.env.SUPABASE_URL = 'https://test.supabase.co';
-    process.env.SUPABASE_ANON_KEY = 'anon-key';
-    process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-key';
-    process.env.RAZORPAY_KEY_ID = 'rzp_id';
-    process.env.RAZORPAY_KEY_SECRET = 'rzp_sec';
-  });
-
-  afterEach(() => {
-    process.env = { ...originalEnv };
-    if (restoreFetch) restoreFetch();
-  });
-
-  test('returns 404 when no active subscription is found', async () => {
-    restoreFetch = mockFetch(async url => {
-      if (url.includes('/auth/v1/user')) {
-        return { ok: true, json: async () => ({ id: 'usr-1' }) };
-      }
-      if (url.includes('/rest/v1/subscriptions')) {
-        return { ok: true, json: async () => [] };
-      }
-      return { ok: true };
-    });
-
-    const req = createMockReq({
-      method: 'POST',
-      headers: { authorization: 'Bearer tok' },
-      body: {}
-    });
-    const res = createMockRes();
-    await cancelSubscriptionHandler(req, res);
-    assert.equal(res.statusCode, 404);
-  });
-
-  test('calls Razorpay cancel endpoint and updates Supabase on active subscription', async () => {
-    let cancelCalled = false;
-    let patchCalled = false;
-    restoreFetch = mockFetch(async (url, options) => {
-      if (url.includes('/auth/v1/user')) {
-        return { ok: true, json: async () => ({ id: 'usr-1' }) };
-      }
-      if (url.includes('/rest/v1/subscriptions') && options.method !== 'PATCH') {
-        return {
-          ok: true,
-          json: async () => [
-            { razorpay_subscription_id: 'sub_active', current_end: '2026-12-01T00:00:00Z', plan: 'pro' }
-          ]
-        };
-      }
-      if (url.includes('/cancel') && options.method === 'POST') {
-        cancelCalled = true;
-        return { ok: true, json: async () => ({ id: 'sub_active', status: 'cancelled' }) };
-      }
-      if (url.includes('/rest/v1/subscriptions') && options.method === 'PATCH') {
-        patchCalled = true;
-        return { ok: true };
-      }
-      return { ok: true };
-    });
-
-    const req = createMockReq({
-      method: 'POST',
-      headers: { authorization: 'Bearer tok' },
-      body: {}
-    });
-    const res = createMockRes();
-    await cancelSubscriptionHandler(req, res);
-    assert.equal(res.statusCode, 200);
-    assert.equal(cancelCalled, true);
-    assert.equal(patchCalled, true);
-    assert.equal(res.body.scheduled, true);
-  });
-});
-
 describe('API: /api/delete-account', () => {
   const originalEnv = { ...process.env };
   let restoreFetch;
@@ -543,114 +320,6 @@ describe('API: /api/delete-account', () => {
     assert.equal(res.statusCode, 200);
     assert.equal(adminDeleteCalled, true);
     assert.equal(res.body.deleted, true);
-  });
-});
-
-describe('API: /api/razorpay-webhook', () => {
-  const originalEnv = { ...process.env };
-  const secret = 'whsec_test_secret_456';
-  let restoreFetch;
-
-  beforeEach(() => {
-    process.env.SUPABASE_URL = 'https://test.supabase.co';
-    process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-key';
-    process.env.RAZORPAY_WEBHOOK_SECRET = secret;
-  });
-
-  afterEach(() => {
-    process.env = { ...originalEnv };
-    if (restoreFetch) restoreFetch();
-  });
-
-  test('rejects missing or invalid webhook signature with 400', async () => {
-    const raw = JSON.stringify({ event: 'subscription.activated' });
-    const req = createMockReq({
-      method: 'POST',
-      headers: { 'x-razorpay-signature': 'bad_sig' },
-      streamBody: raw
-    });
-    const res = createMockRes();
-    await razorpayWebhookHandler(req, res);
-    assert.equal(res.statusCode, 400);
-  });
-
-  test('rejects body exceeding 256KB with 413 Payload Too Large', async () => {
-    const largeChunk = Buffer.alloc(300 * 1024, 'a');
-    const req = createMockReq({
-      method: 'POST',
-      headers: { 'x-razorpay-signature': 'any' },
-      streamBody: largeChunk
-    });
-    const res = createMockRes();
-    await razorpayWebhookHandler(req, res);
-    assert.equal(res.statusCode, 413);
-  });
-
-  test('ignores unhandled events or missing user safely with 200', async () => {
-    const payload = {
-      event: 'payment.captured',
-      created_at: 1700000000,
-      payload: { subscription: { entity: { id: 'sub_1' } } }
-    };
-    const raw = JSON.stringify(payload);
-    const sig = createHmac('sha256', secret).update(raw).digest('hex');
-
-    const req = createMockReq({
-      method: 'POST',
-      headers: { 'x-razorpay-signature': sig },
-      streamBody: raw
-    });
-    const res = createMockRes();
-    await razorpayWebhookHandler(req, res);
-    assert.equal(res.statusCode, 200);
-    assert.equal(res.body.ignored, true);
-  });
-
-  test('persists valid subscription event via Supabase RPC', async () => {
-    let rpcCalled = false;
-    restoreFetch = mockFetch(async (url, options) => {
-      if (url.includes('/rest/v1/rpc/upsert_careeros_subscription')) {
-        rpcCalled = true;
-        const body = JSON.parse(options.body);
-        assert.equal(body.p_user_id, 'usr-uuid-123');
-        assert.equal(body.p_plan, 'pro');
-        assert.equal(body.p_status, 'active');
-        return { ok: true, json: async () => true };
-      }
-      return { ok: true };
-    });
-
-    const payload = {
-      event: 'subscription.activated',
-      created_at: 1700001000,
-      payload: {
-        subscription: {
-          entity: {
-            id: 'sub_999',
-            current_start: 1700001000,
-            current_end: 1702593000,
-            notes: {
-              supabase_user_id: 'usr-uuid-123',
-              plan: 'pro'
-            }
-          }
-        }
-      }
-    };
-    const raw = JSON.stringify(payload);
-    const sig = createHmac('sha256', secret).update(raw).digest('hex');
-
-    const req = createMockReq({
-      method: 'POST',
-      headers: { 'x-razorpay-signature': sig },
-      streamBody: raw
-    });
-    const res = createMockRes();
-    await razorpayWebhookHandler(req, res);
-    assert.equal(res.statusCode, 200);
-    assert.equal(rpcCalled, true);
-    assert.equal(res.body.received, true);
-    assert.equal(res.body.stale, false);
   });
 });
 
