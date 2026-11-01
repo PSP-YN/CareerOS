@@ -167,9 +167,6 @@ describe('API: /api/coach', () => {
       if (url.includes('/auth/v1/user')) {
         return { ok: true, json: async () => ({ id: 'usr-123' }) };
       }
-      if (url.includes('/rest/v1/subscriptions')) {
-        return { ok: true, json: async () => [] };
-      }
       if (url.includes('/rest/v1/rpc/consume_careeros_ai_quota')) {
         return { ok: true, json: async () => false };
       }
@@ -190,9 +187,6 @@ describe('API: /api/coach', () => {
     restoreFetch = mockFetch(async url => {
       if (url.includes('/auth/v1/user')) {
         return { ok: true, json: async () => ({ id: 'usr-123' }) };
-      }
-      if (url.includes('/rest/v1/subscriptions')) {
-        return { ok: true, json: async () => [{ plan: 'pro' }] };
       }
       if (url.includes('/rest/v1/rpc/consume_careeros_ai_quota')) {
         return { ok: true, json: async () => true };
@@ -232,7 +226,7 @@ describe('API: /api/coach', () => {
     assert.equal(res.body.result.summary, 'Solid technical answer');
     assert.deepEqual(res.body.result.next_actions, ['Add performance metric']);
     assert.deepEqual(res.body.result.caveats, ['Advisory only']);
-    assert.equal(res.body.quota.dailyLimit, 50);
+    assert.equal(res.body.quota.dailyLimit, 10);
   });
 });
 
