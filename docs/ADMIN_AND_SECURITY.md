@@ -1,35 +1,57 @@
-# CareerOS performance, security and question administration
+# Security and administration
 
-## Current security model
-- Supabase publishable/anon key is public by design and is restricted by Row Level Security.
-- `SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY`, and Razorpay secrets must exist only in Vercel server-side Environment Variables. Never prefix them with `NEXT_PUBLIC_` or place them in browser JavaScript.
-- Gemini calls are proxied through `/api/coach`; the browser never receives the Gemini key. The server sends it using Google's `x-goog-api-key` header.
-- User workspace rows are protected by RLS and ownership checks.
-- Interview question rows have no direct anon/authenticated grants. The public question endpoint exposes only active prompt/rubric data; admin writes are mediated by a server route.
-- Admin authorization checks `auth.users.app_metadata.role === "admin"` after Supabase validates the bearer token. Do not use `user_metadata` for authorization; users can edit it themselves.
+## Trust boundaries
 
-## Enable administrator access
-1. Sign in once using the Google account that should administer CareerOS.
+- Browser code receives only the Supabase project URL and publishable/legacy anon key.
+- `SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY`, and Razorpay secrets belong only in Vercel server-side environment variables.
+- Gemini is called through `/api/coach`. The route validates the Supabase bearer token, allowlists tasks, bounds request context, checks webhook-confirmed entitlements, consumes an atomic database quota and sends the API key through Google's `x-goog-api-key` header.
+- User workspace access is protected by owner-based Supabase RLS.
+- Interview questions are readable through a narrow public endpoint; direct client table privileges are denied. Admin writes require a verified Supabase user with `app_metadata.role === "admin"`.
+- Never use editable `user_metadata` for authorization. Never log secrets, bearer tokens, full resumes or interview answers.
+
+## Configure Gemini
+
+1. Create or select a Gemini API key in Google AI Studio.
+2. Add it to Vercel as `GEMINI_API_KEY`, marked Sensitive, for each environment that should use AI (Production, Preview and Development as appropriate).
+3. Redeploy after changing environment variables.
+4. Sign in to CareerOS, select an AI review, read the consent text and explicitly opt in.
+5. Check the function logs for provider status and quota errors without logging request bodies or secrets.
+
+The application uses the Gemini `generateContent` REST endpoint and the `gemini-2.5-flash` model. A configured environment variable does not prove the key is valid or that the Google project has available quota; complete a real signed-in review to verify provider access.
+
+## Grant administrator access
+
+1. Sign in once with the Google account that should administer CareerOS.
 2. In Supabase Dashboard → Authentication → Users, locate that account and copy its user UUID.
-3. Use the Supabase Admin API or a trusted server-side admin operation to set `app_metadata` to include `{"role":"admin"}`. Do not set this in the user's editable metadata and do not expose a service-role key in the browser.
-4. Sign out and sign in again so the refreshed access token contains the new app metadata.
-5. Open `/admin`. The server verifies the role on every request; hiding the admin link is only a UI convenience, not the security boundary.
+3. Use the Supabase Admin API or another trusted server-side admin operation to set `app_metadata` to include `{"role":"admin"}`.
+4. Sign out and sign in again so the access token contains the updated app metadata.
+5. Open `/admin`. The server checks the role on every request; hiding the admin link is only a convenience, not the security boundary.
 
-## Install the question bank
-Run the updated `supabase/schema.sql` in Supabase SQL Editor. This adds the `interview_questions` table with RLS enabled and denies direct client access. The admin API uses the server-side service-role key. Existing interview questions remain available as built-in local questions even if the database is unavailable.
+Never set administrator permissions through the user's editable metadata or from browser JavaScript.
 
-## Performance notes
-- The browser session uses persistent local storage and is rendered immediately after local session recovery.
-- Cloud workspace reconciliation runs in the background and avoids an unnecessary upsert when local and cloud payloads already match.
-- Public Supabase configuration is cacheable; it contains only the public URL and publishable/anon key.
-- Custom question data is cached briefly and falls back to built-in questions if the database endpoint is unavailable.
+## Question content
 
-## Supabase dashboard settings to complete
+- Default career-role templates and built-in interview questions are version-controlled product content in `website/data/`; they are not prefilled user profiles.
+- Custom questions are stored in Supabase `interview_questions` and administered through `/admin`.
+- Run the supplied Supabase schema in the project before using custom question administration.
+- The public API returns only active questions and bounded fields. The database denies direct `anon` and `authenticated` table access.
+
+## Performance and caching
+
+- Static pages and assets are served from the Vercel output directory `website/`.
+- Root-level `api/` contains serverless functions and must remain outside the static website folder.
+- The browser recovers its persisted Supabase session locally; initial cloud reconciliation runs in the background.
+- Workspace writes are debounced and unchanged initial payloads are not written again.
+- Public Supabase configuration contains no server secrets and can be cached briefly. User-specific and AI API responses use no-store caching.
+
+## Supabase dashboard hardening
+
 - Enable leaked-password protection under Authentication → Security and password settings.
-- Keep JWT expiry at the recommended default (typically one hour) unless you have a documented security reason to change it.
-- Restrict Google OAuth scopes to `openid`, email and profile unless the product needs more.
-- For a branded Google authorization domain instead of the Supabase project hostname, configure a Supabase Custom Domain (paid add-on) and update Google/Supabase OAuth callback and redirect configuration accordingly. Verify Google OAuth branding for the CareerOS name/logo.
-- Review Supabase Security and Performance Advisors after applying schema updates.
+- Restrict Google OAuth scopes to the minimum required: `openid`, email and profile.
+- Keep administrator permissions in `app_metadata`.
+- Review Supabase Security and Performance Advisors after schema changes.
+- Consider a branded Supabase custom auth domain if the Google authorization flow still displays the project hostname; this is a paid add-on. Google OAuth branding verification is configured separately.
 
-## Release verification still required
-Test real OAuth on a new and returning account, two-account RLS isolation, simultaneous cross-device updates, Gemini quota and provider failures, resume PDF export, every interview round, application CRUD/persistence, account deletion, Razorpay test checkout/webhooks, Android workflow and keyboard/screen-reader/contrast behavior. Automated static checks cannot replace those live integration tests.
+## Release gate
+
+Static checks do not replace live testing. Before describing CareerOS as production-ready, verify: new and returning Google accounts; two-account RLS isolation; concurrent and cross-device workspace updates; Gemini success, quota exhaustion and provider failures; resume PDF output; all seven interview rounds; application CRUD; account deletion; Razorpay test checkout and webhooks; Android workflows; keyboard, screen-reader and contrast behavior.

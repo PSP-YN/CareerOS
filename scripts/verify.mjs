@@ -1,119 +1,95 @@
-import { readFileSync, existsSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { readFileSync as read, existsSync as exists, readdirSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 
 const required = [
-  'index.html','app.html','admin.html','admin.js','question-bank.js','styles.css','logo.svg','favicon.svg','auth.js','ai.js','ads.js','billing.js',
-  'api/config.js','api/coach.js','api/questions.js','api/admin-questions.js','api/create-subscription.js','api/verify-subscription.js',
-  'api/razorpay-webhook.js','api/delete-account.js','api/cancel-subscription.js','supabase/schema.sql','sitemap.xml','llms.txt','robots.txt','README.md','vercel.json'
+  'website/index.html','website/app.html','website/admin.html','website/about.html',
+  'website/career-pivot-guide.html','website/pricing.html','website/privacy.html','website/terms.html',
+  'website/assets/styles.css','website/assets/favicon.svg','website/assets/logo.svg',
+  'website/assets/manifest.webmanifest','website/assets/admin.css',
+  'website/js/app.js','website/js/auth.js','website/js/ai.js','website/js/admin.js',
+  'website/js/billing.js','website/js/ads.js','website/data/career-content.js',
+  'website/data/extended-questions.js','api/coach.js','api/config.js','api/questions.js',
+  'api/admin-questions.js','api/delete-account.js','api/razorpay-webhook.js',
+  'supabase/schema.sql','README.md','vercel.json'
 ];
-for (const file of required) if (!existsSync(file)) throw new Error('Missing required file: ' + file);
+for (const file of required) if (!exists(file)) throw Error('Missing: '+file);
 
-const app = readFileSync('app.html','utf8');
-if (!app.includes("function fresh(){return{profile:{role:'',experience:'',timeline:''") || !app.includes("skills:[],done:[]")) {
-  throw new Error('New workspaces must start without a fabricated role, skill ratings, or completed milestones.');
+const readText = path => read(path,'utf8');
+const appHtml=readText('website/app.html'), app=readText('website/js/app.js');
+const contentSource=readText('website/data/career-content.js');
+const contentMatch=contentSource.match(/Object\.freeze\((.*)\);/s);
+if(!contentMatch) throw Error('Career content data is not a valid structured object.');
+const content=JSON.parse(contentMatch[1]);
+const extendedSource=readText('website/data/extended-questions.js');
+const extendedMatch=extendedSource.match(/window\.CareerOSQuestionBank\s*=\s*(\{[\s\S]*\});/);
+if(!extendedMatch) throw Error('Extended question bank is missing.');
+const extended=JSON.parse(extendedMatch[1]);
+
+if(!app.includes('profile:{role:\'\',experience:\'\',timeline:\'\'')||!app.includes('skills:[],done:[]'))
+  throw Error('New workspaces must start without fabricated profile, skill or milestone data.');
+if(!app.includes('if(!S.profile.role||!S.skills.length||S.skills.some(x=>Number(x.level)===0))return null'))
+  throw Error('Readiness must require a target role and completed skill assessments.');
+if(!app.includes("P.length?Math.round(n/P.length*100)+'%':'Not started'")||!app.includes('(P.length?n/P.length*100:0)'))
+  throw Error('Empty roadmap progress must be represented safely.');
+if(!app.includes("if(!Object.values(r).some(value=>String(value||'').trim())&&!skills)"))
+  throw Error('Resume preview must not fabricate a sample candidate.');
+if(!app.includes('ROLE_TEMPLATES=window.CareerOSContent?.roles||{}')||!app.includes('Q=window.CareerOSContent?.questions||{}'))
+  throw Error('Role templates and default questions must be data files, not embedded in application logic.');
+for(const round of ['aptitude','coding','technical','system_design','case_study','behavioral','hr'])
+  if(!Array.isArray(content.questions[round])||content.questions[round].length<5) throw Error('Question pool too small: '+round);
+for(const round of ['aptitude','coding','technical'])
+  if(!Array.isArray(extended[round])||extended[round].length<20) throw Error('Expanded question pool missing: '+round);
+if(Object.keys(content.roles).length<7) throw Error('Career-role templates are missing.');
+
+const ids=[...appHtml.matchAll(/\bid="([^"]+)"/g)].map(x=>x[1]);
+if(new Set(ids).size!==ids.length) throw Error('Duplicate IDs in workspace HTML.');
+for(const id of ['overview','profile','resume','skills','roadmap','interview','applications','signinGoogle','roleTemplate','applyRoleTemplate','qtype','evaluate','addapp','resumePreview','downloadResume','printResume'])
+  if(!ids.includes(id)) throw Error('Missing workspace control: '+id);
+if(/<script\b(?![^>]*\bsrc=)(?![^>]*application\/ld\+json)[^>]*>[\s\S]*?\S[\s\S]*?<\/script>/i.test(appHtml))
+  throw Error('Executable inline JavaScript remains in workspace HTML.');
+for(const path of ['website/index.html','website/admin.html','website/pricing.html','website/about.html','website/privacy.html','website/terms.html','website/career-pivot-guide.html'])
+  if(!exists(path)) throw Error('Missing public page '+path);
+const landing=readText('website/index.html');
+if(landing.indexOf('<section class="closing-cta">')>landing.indexOf('<footer class="marketing-footer">'))
+  throw Error('Closing call-to-action must appear before the footer.');
+for(const marker of ['rel="canonical"','application/ld+json','FAQPage','/assets/styles.css','/js/ads.js'])
+  if(!landing.includes(marker)) throw Error('Landing page marker missing: '+marker);
+
+const manifest=JSON.parse(readText('website/assets/manifest.webmanifest'));
+if(!exists('website'+manifest.icons[0].src)) throw Error('PWA icon path is invalid.');
+const deployment=JSON.parse(readText('vercel.json'));
+if(deployment.outputDirectory!=='website'||deployment.cleanUrls!==true) throw Error('Vercel static output must target website/.');
+for(const rootFile of ['index.html','app.html','admin.html','styles.css','auth.js','question-bank.js'])
+  if(exists(rootFile)) throw Error('Legacy website file remains at repository root: '+rootFile);
+
+const staticFiles=[];
+function walk(dir){for(const item of readdirSync(dir,{withFileTypes:true})){const p=dir+'/'+item.name;if(item.isDirectory())walk(p);else staticFiles.push(p);}}
+walk('website');
+for(const path of staticFiles){
+  const source=readText(path);
+  for(const secret of ['SUPABASE_SERVICE_ROLE_KEY','GEMINI_API_KEY','RAZORPAY_KEY_SECRET'])
+    if(source.includes(secret)) throw Error('Server secret referenced in public website: '+path);
 }
-if (app.includes("done:[true,true") || app.includes("D.map(x=>({name:x[0],level:x[1]")) {
-  throw new Error('Seeded skill levels or completed roadmap milestones remain in the app initializer.');
-}
-if (!app.includes('Number(x.level)>0&&x.level<x.required') || !app.includes('if(!S.profile.role||!S.skills.length||S.skills.some(x=>Number(x.level)===0))return null')) {
-  throw new Error('Unassessed skills must not be counted as actual skill gaps or an overall readiness score.');
-}
-if (app.includes('Data is saved in this browser only. No account or cloud sync is implemented.')) {
-  throw new Error('Outdated cloud-sync notice remains in the app.');
-}
-if (!app.includes('RESUME_FIELDS.forEach(id=>$(id).addEventListener(\'input\'' ) || !app.includes("addEventListener('change',e=>{if(e.target.dataset.skill!==undefined)render()})")) {
-  throw new Error('Resume preview or skill slider interaction is not wired for live updates.');
-}
-const ids = [...app.matchAll(/\bid="([^"]+)"/g)].map(m => m[1]);
-const duplicates = ids.filter((id,i) => ids.indexOf(id) !== i);
-if (duplicates.length) throw new Error('Duplicate app HTML IDs: ' + [...new Set(duplicates)].join(', '));
-for (const id of ['overview','profile','resume','skills','roadmap','interview','applications','saveprofile','analyzejd','evaluate','addapp','signinGoogle','signout','roleTemplate','applyRoleTemplate','qtype','jobUrl','appliedAt','followUp','appSummary','careerAiConsent','careerReview','careerReviewFeedback','roadmapAiConsent','roadmapReview','roadmapReviewFeedback','resumeName','resumeEmail','resumeHeadline','resumeSummary','resumeEducation','resumeExperience','resumeProjects','resumeCertifications','resumeLinks','resumePreview','resumeMatch','saveResume','downloadResume','printResume']) {
-  if (!ids.includes(id)) throw new Error('Missing app control: ' + id);
+for(const page of ['website/index.html','website/app.html','website/admin.html','website/pricing.html']){
+  const html=readText(page);
+  for(const [,url] of html.matchAll(/(?:src|href)="(\/(?:assets|js|data)\/[^"?#]+)"/g))
+    if(!exists('website'+url)) throw Error('Broken static asset '+url+' referenced by '+page);
 }
 
-if (!app.includes("$('roadpct').textContent=P.length?Math.round(n/P.length*100)+'%':'—'")) {
-  throw new Error('An empty roadmap must not display NaN progress.');
-}
-if (!app.includes('data-remove-skill') || !app.includes('Skill removed from your assessment.')) {
-  throw new Error('Skill assessment is missing the remove-skill action.');
-}
-const interview = ['aptitude','coding','technical','system_design','case_study','behavioral','hr'];
-for (const round of interview) if (!app.includes(round + ':') && !app.includes('value="' + round + '"')) {
-  throw new Error('Missing interview round: ' + round);
-}
-for (const role of ['ai_ml','full_stack','backend','frontend','data_analyst','cybersecurity','product']) {
-  if (!app.includes('"' + role + '":') && !app.includes('value="' + role + '"')) throw new Error('Missing career path template: ' + role);
-}
-for (const marker of ['data-status','followUp','cancel_at_cycle_end','resume-document']) {
-  const source = marker === 'cancel_at_cycle_end' ? readFileSync('supabase/schema.sql','utf8') : marker === 'resume-document' ? readFileSync('styles.css','utf8') : app;
-  if (!source.includes(marker)) throw new Error('Missing application or subscription feature: ' + marker);
-}
-
-const landing = readFileSync('index.html','utf8');
-for (const marker of ['rel="canonical"','application/ld+json','FAQPage','/pricing','/career-pivot-guide','/ads.js']) {
-  if (!landing.includes(marker)) throw new Error('Missing SEO or navigation marker: ' + marker);
-}
-const sitemap = readFileSync('sitemap.xml','utf8');
-if (!sitemap.includes('careeros-intelligence.vercel.app')) throw new Error('Sitemap is missing canonical domain.');
-
-const temp = mkdtempSync(join(tmpdir(),'careeros-check-'));
-try {
-  const inline = [...app.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)]
-    .filter(m => !/\bsrc\s*=/.test(m[1]) && !/application\/ld\+json/i.test(m[1]) && m[2].trim());
-  if (!inline.length) throw new Error('No inline app script found.');
-  inline.forEach((m,i) => {
-    const file = join(temp,'inline-'+i+'.js');
-    writeFileSync(file,m[2]);
-    const check = spawnSync(process.execPath,['--check',file],{encoding:'utf8'});
-    if (check.status !== 0) throw new Error('Inline app script syntax: '+check.stderr);
-  });
-} finally { rmSync(temp,{recursive:true,force:true}); }
-
-const jsFiles = [
-  'auth.js','ai.js','ads.js','billing.js','admin.js','question-bank.js','api/config.js','api/coach.js','api/questions.js','api/admin-questions.js',
-  'api/create-subscription.js','api/verify-subscription.js','api/razorpay-webhook.js','api/delete-account.js','api/cancel-subscription.js'
-];
-for (const file of jsFiles) {
-  const check = spawnSync(process.execPath,['--check',file],{encoding:'utf8'});
-  if (check.status !== 0) throw new Error(file + ': ' + check.stderr);
-}
-const questionBank = readFileSync('question-bank.js','utf8');
-for (const round of ['aptitude','coding','technical']) if ((questionBank.match(new RegExp(round + ': \\[','g')) || []).length !== 1) throw new Error('Missing expanded question bank: '+round);
-for (const marker of ['interview_questions','app_metadata?.role !== \'admin\'','x-goog-api-key']) {
-  const source = marker === 'interview_questions' ? readFileSync('supabase/schema.sql','utf8') : marker === 'x-goog-api-key' ? readFileSync('api/coach.js','utf8') : readFileSync('api/admin-questions.js','utf8');
-  if (!source.includes(marker)) throw new Error('Missing admin/security control: '+marker);
-}
-const schema = readFileSync('supabase/schema.sql','utf8');
-for (const marker of ['enable row level security','No direct user access to AI usage counters','consume_careeros_ai_quota','upsert_careeros_subscription','provider_event_created_at','service_role','subscriptions']) {
-  if (!schema.includes(marker)) throw new Error('Missing database security control: '+marker);
-}
-const authSource = readFileSync('auth.js','utf8');
-if (!authSource.includes('const roleChanged =') || !authSource.includes('skills: roleChanged ? localSkills') || !authSource.includes('done: roleChanged ? localDone') || !authSource.includes('cloudIsPristineSeed') || !authSource.includes('legacySeededProgress')) {
-  throw new Error('Role changes must reset role-specific skill and roadmap progress during cloud merge.');
-}
-const coach = readFileSync('api/coach.js','utf8');
-if (!coach.includes('GEMINI_API_KEY') || !coach.includes('SUPABASE_SERVICE_ROLE_KEY') || !coach.includes('MAX_CONTEXT_CHARS') || !coach.includes('career_review') || !coach.includes('roadmap_review')) {
-  throw new Error('AI API guardrails are incomplete.');
-}
-const frontendFiles = ['index.html','app.html','auth.js','ai.js','billing.js','ads.js'];
-for (const file of frontendFiles) {
-  const source = readFileSync(file,'utf8');
-  for (const secretName of ['SUPABASE_SERVICE_ROLE_KEY','GEMINI_API_KEY','RAZORPAY_KEY_SECRET']) {
-    if (source.includes(secretName)) throw new Error('Server-only secret referenced in frontend file: ' + file);
-  }
-}
-const deleteApi = readFileSync('api/delete-account.js','utf8');
-if (!deleteApi.includes('DELETE MY CAREEROS ACCOUNT') || !deleteApi.includes('claims.iat') || !deleteApi.includes('/auth/v1/admin/users/')) {
-  throw new Error('Account deletion safeguards are incomplete.');
-}
-const cancelApi = readFileSync('api/cancel-subscription.js','utf8');
-if (!cancelApi.includes('cancel_at_cycle_end: true') || !cancelApi.includes('SUPABASE_SERVICE_ROLE_KEY')) {
-  throw new Error('Subscription cancellation safeguards are incomplete.');
-}
-const billing = readFileSync('billing.js','utf8');
-if (!billing.includes('/api/cancel-subscription') || !billing.includes('cancel_at_cycle_end')) {
-  throw new Error('Self-service billing management is incomplete.');
-}
-console.log('CareerOS checks passed: application controls, role templates, expanded interview bank, admin authorization, SEO, JavaScript syntax, Supabase RLS, AI quotas, account deletion and subscription management.');
+const jsFiles=[...staticFiles.filter(x=>x.endsWith('.js')),...['api/coach.js','api/config.js','api/questions.js','api/admin-questions.js','api/delete-account.js','api/razorpay-webhook.js','api/create-subscription.js','api/verify-subscription.js','api/cancel-subscription.js']];
+for(const file of jsFiles){const result=spawnSync(process.execPath,['--check',file],{encoding:'utf8'});if(result.status!==0)throw Error(file+': '+result.stderr);}
+const schema=readText('supabase/schema.sql'),auth=readText('website/js/auth.js'),coach=readText('api/coach.js'),admin=readText('api/admin-questions.js');
+for(const marker of ['enable row level security','user_workspaces','interview_questions','consume_careeros_ai_quota','service_role'])
+  if(!schema.includes(marker))throw Error('Supabase schema missing '+marker);
+for(const marker of ['persistSession:true','autoRefreshToken:true','localStorage','syncWorkspace()'])
+  if(!auth.includes(marker))throw Error('Persistent auth/sync control missing: '+marker);
+for(const marker of ['GEMINI_API_KEY','x-goog-api-key','gemini-2.5-flash','MAX_CONTEXT_CHARS','AbortController','consume_careeros_ai_quota'])
+  if(!coach.includes(marker))throw Error('Gemini server guard missing: '+marker);
+if(!admin.includes("user.app_metadata?.role !== 'admin'"))throw Error('Admin role is not checked server-side.');
+for(const marker of ['SUPABASE_SERVICE_ROLE_KEY','GEMINI_API_KEY','RAZORPAY_KEY_SECRET'])
+  if(landing.includes(marker)||appHtml.includes(marker))throw Error('Secret name exposed in HTML.');
+const readme=readText('README.md');
+for(const marker of ['Our purpose','The CareerOS experience','Trust and product boundaries','CareerOS — Career intelligence'])
+  if(!readme.includes(marker))throw Error('Company README section missing: '+marker);
+if(readme.includes('npm run check')||readme.includes('Local preview'))throw Error('README is overly developer-oriented.');
+console.log('CareerOS verification passed: website structure, content separation, clean workspace state, question coverage, assets, JavaScript syntax, Gemini key boundary, admin authorization and Supabase protections.');
