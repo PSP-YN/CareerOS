@@ -211,11 +211,13 @@ async function syncWorkspace() {
       // Merge instead of blindly replacing: signing in must not silently discard guest work.
       const merged = mergeWorkspace(data.payload, local);
       window.CareerOSState.replace(merged);
-      const { error: saveError } = await supabase.from('user_workspaces').upsert({
-        user_id: userId, payload: merged, updated_at: new Date().toISOString()
-      }, { onConflict: 'user_id' });
-      if (saveError) throw saveError;
-      notify('Cloud and this-device workspace data have been combined.');
+      // Avoid a write on every login when the local and cloud workspaces already match.
+      if (JSON.stringify(merged) !== JSON.stringify(data.payload)) {
+        const { error: saveError } = await supabase.from('user_workspaces').upsert({
+          user_id: userId, payload: merged, updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id' });
+        if (saveError) throw saveError;
+      }
     } else {
       const { error: saveError } = await supabase.from('user_workspaces').upsert({
         user_id: userId, payload: local, updated_at: new Date().toISOString()
@@ -253,7 +255,7 @@ function scheduleSync() {
       syncing = false;
       if (syncAgain) { syncAgain = false; scheduleSync(); }
     }
-  }, 700);
+  }, 1100);
 }
 
 async function deleteAccount() {
@@ -296,7 +298,7 @@ signIn?.addEventListener('click', async () => {
   try {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin + '/app' }
+      options: { redirectTo: window.location.origin + '/app', queryParams: { prompt: 'select_account' } }
     });
     if (error) throw error;
   } catch (error) {
@@ -332,16 +334,18 @@ window.addEventListener('careeros:state-changed', scheduleSync);
     const config = await response.json();
     if (!config.supabaseUrl || !config.supabaseAnonKey) throw new Error('Supabase public configuration is incomplete.');
     supabase = createClient(config.supabaseUrl, config.supabaseAnonKey, {
-      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storage: window.localStorage, storageKey: 'careeros-auth-v1' }
     });
+    // Supabase persists the refresh-token session in browser storage. Resolve it locally,
+    // render the signed-in state immediately, and let cloud reconciliation run in the background.
     const { data: { session } } = await supabase.auth.getSession();
     showSignedIn(session);
-    if (session) await syncWorkspace();
     supabase.auth.onAuthStateChange((event, sessionValue) => {
       showSignedIn(sessionValue);
-      if (event === 'SIGNED_IN' && sessionValue) window.setTimeout(syncWorkspace, 0);
+      if (event === 'SIGNED_IN' && sessionValue) window.setTimeout(() => { void syncWorkspace(); }, 0);
       if (event === 'SIGNED_OUT') notify('You are signed out.');
     });
+    if (session) void syncWorkspace();
   } catch (error) {
     console.info('CareerOS authentication configuration:', error.message);
     status.textContent = 'Guest workspace';
