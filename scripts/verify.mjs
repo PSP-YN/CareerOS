@@ -83,4 +83,10 @@ for(const marker of ['enable row level security','user_workspaces','interview_qu
   if(!schema.includes(marker))throw Error('Supabase schema missing '+marker);
 for(const marker of ['persistSession: true','autoRefreshToken: true','window.localStorage','syncWorkspace'])
   if(!auth.includes(marker))throw Error('Persistent auth/sync control missing: '+marker);
+if(!schema.includes('as $\\ndeclare') || !schema.includes('\\nend;\\n$;') || schema.includes('as $\\ndeclare'))
+  throw Error('Subscription SQL function must use a valid dollar-quoted body.');
+if(!app.includes('if(roleChanged){S.skills=[];P.splice(0,P.length);S.done=[];S.answers=[];S.sessions=0;'))
+  throw Error('Changing the target role must reset role-specific assessments, milestones and interview history.');
+if(!auth.includes('const answers = roleChanged') || !auth.includes('sessions: roleChanged ?'))
+  throw Error('Cloud role changes must not merge interview history from the previous target role.');
 
