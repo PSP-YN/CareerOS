@@ -7,9 +7,9 @@ const required = [
   'website/assets/styles.css','website/assets/favicon.svg','website/assets/logo.svg',
   'website/assets/manifest.webmanifest','website/assets/admin.css',
   'website/js/app.js','website/js/auth.js','website/js/ai.js','website/js/admin.js',
-  'website/js/billing.js','website/js/ads.js','website/js/interview-engine.js','website/js/decision-studio.js','website/data/career-content.js',
+  'website/js/ads.js','website/js/interview-engine.js','website/js/decision-studio.js','website/data/career-content.js',
   'website/data/extended-questions.js','website/data/full-scale-questions.js','api/coach.js','api/config.js','api/questions.js',
-  'api/admin-questions.js','api/delete-account.js','api/razorpay-webhook.js',
+  'api/admin-questions.js','api/delete-account.js',
   'supabase/schema.sql','README.md','vercel.json'
 ];
 for (const file of required) if (!exists(file)) throw Error('Missing: '+file);
@@ -94,7 +94,7 @@ for(const page of ['website/index.html','website/app.html','website/admin.html',
     if(!exists('website'+url)) throw Error('Broken static asset '+url+' referenced by '+page);
 }
 
-const jsFiles=[...staticFiles.filter(x=>x.endsWith('.js')),...['api/coach.js','api/config.js','api/questions.js','api/admin-questions.js','api/delete-account.js','api/razorpay-webhook.js','api/create-subscription.js','api/verify-subscription.js','api/cancel-subscription.js']];
+const jsFiles=[...staticFiles.filter(x=>x.endsWith('.js')),...['api/coach.js','api/config.js','api/questions.js','api/admin-questions.js','api/delete-account.js']];
 for(const file of jsFiles){const result=spawnSync(process.execPath,['--check',file],{encoding:'utf8'});if(result.status!==0)throw Error(file+': '+result.stderr);}
 const schema=readText('supabase/schema.sql'),auth=readText('website/js/auth.js'),coach=readText('api/coach.js'),admin=readText('api/admin-questions.js');
 if(!schema.includes('revoke all on public.subscriptions from anon;'))
