@@ -33,9 +33,6 @@ create policy "Users can update their own workspace"
 grant select, insert, update on public.user_workspaces to authenticated;
 revoke all on public.user_workspaces from anon;
 
-create index if not exists user_workspaces_updated_at_idx
-  on public.user_workspaces (updated_at desc);
-
 comment on table public.user_workspaces is
   'Private per-user CareerOS workspace payload. RLS restricts access to the owning auth user.';
 
@@ -198,8 +195,6 @@ create policy "No direct client access to interview questions"
   using (false) with check (false);
 revoke all on public.interview_questions from anon, authenticated;
 grant select, insert, update, delete on public.interview_questions to service_role;
-create index if not exists interview_questions_created_by_idx
-  on public.interview_questions(created_by);
 create index if not exists interview_questions_active_created_idx
   on public.interview_questions(is_active, created_at desc);
 comment on table public.interview_questions is
