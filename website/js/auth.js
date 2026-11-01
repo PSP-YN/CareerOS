@@ -141,6 +141,8 @@ function mergeWorkspace(cloud, local) {
   const localHasWork = localProfileEdited || skillsChanged || progressChanged || localResumeEdited ||
     (Array.isArray(l.apps) && l.apps.length > 0) ||
     (Array.isArray(l.answers) && l.answers.length > 0) ||
+    (Array.isArray(l.decisions) && l.decisions.length > 0) ||
+    (Array.isArray(l.mockInterviewHistory) && l.mockInterviewHistory.length > 0) ||
     Number(l.sessions) > 0;
 
   // A pristine new-device workspace contains seeded defaults, not user edits.
@@ -197,6 +199,10 @@ function mergeWorkspace(cloud, local) {
     done: roleChanged ? localDone : (progressChanged ? done : (cloudDone.length ? cloudDone : localDone)),
     answers,
     apps,
+    decisions: unique([...(Array.isArray(c.decisions) ? c.decisions : []), ...(Array.isArray(l.decisions) ? l.decisions : [])],
+      item => item.id || item.createdAt || item.title + '|' + item.optionA + '|' + item.optionB),
+    mockInterviewHistory: unique([...(Array.isArray(c.mockInterviewHistory) ? c.mockInterviewHistory : []), ...(Array.isArray(l.mockInterviewHistory) ? l.mockInterviewHistory : [])],
+      item => item.id || item.completedAt),
     sessions: roleChanged ? (Number(l.sessions) || 0) : Math.max(Number(c.sessions) || 0, Number(l.sessions) || 0)
   };
 }
