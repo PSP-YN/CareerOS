@@ -42,21 +42,21 @@ if (!geminiKey) {
 } else {
   try {
     const res = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + encodeURIComponent(geminiKey),
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': geminiKey },
         body: JSON.stringify({
           contents: [{ parts: [{ text: 'Return {"status":"ok"} in valid JSON.' }] }],
           generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 20 }
         })
       }
     );
-    if (res.ok) {
-      console.log('   [PASS] Google Gemini 2.5 Flash is active and responding.');
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && Array.isArray(data.candidates) && data.candidates.length > 0) {
+      console.log('   [PASS] Google Gemini 2.5 Flash returned a model response.');
     } else {
-      const err = await res.json().catch(() => ({}));
-      console.log(`   [FAIL] Google Gemini rejected key: HTTP ${res.status} - ${err.error?.message || 'Unknown error'}`);
+      console.log(`   [FAIL] Google Gemini check failed: HTTP ${res.status} - ${data.error?.message || 'No candidate response returned'}`);
       allPassed = false;
     }
   } catch (e) {
@@ -97,7 +97,7 @@ if (!supabaseUrl) {
 
     // Check REST API & Required Tables via service role key
     const headers = { apikey: supabaseService, Authorization: 'Bearer ' + supabaseService };
-    const tables = ['user_workspaces', 'ai_usage_daily', 'subscriptions', 'interview_questions'];
+    const tables = ['user_workspaces', 'ai_usage_daily', 'interview_questions'];
     
     for (const table of tables) {
       const tRes = await fetch(supabaseUrl + `/rest/v1/${table}?select=count`, {
@@ -116,12 +116,14 @@ if (!supabaseUrl) {
     const rpcQuota = await fetch(supabaseUrl + '/rest/v1/rpc/consume_careeros_ai_quota', {
       method: 'POST',
       headers: { ...headers, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ p_user_id: '00000000-0000-0000-0000-000000000000', p_daily_limit: 10 })
+      // Null user_id is rejected before any insert, while still proving the RPC exists and executes.
+      body: JSON.stringify({ p_user_id: null, p_daily_limit: 10 })
     });
-    if (rpcQuota.status === 200 || rpcQuota.status === 400 || (rpcQuota.status === 404 && (await rpcQuota.text()).includes('function'))) {
-      console.log('   [PASS] Stored procedure "consume_careeros_ai_quota" endpoint reached.');
+    const quotaResult = await rpcQuota.json().catch(() => null);
+    if (rpcQuota.ok && quotaResult === false) {
+      console.log('   [PASS] Stored procedure "consume_careeros_ai_quota" exists and rejects an invalid user safely.');
     } else {
-      console.log(`   [FAIL] Stored procedure "consume_careeros_ai_quota" missing. Run supabase/schema.sql migration.`);
+      console.log(`   [FAIL] Stored procedure "consume_careeros_ai_quota" check failed (HTTP ${rpcQuota.status}). Run supabase/schema.sql migration.`);
       allPassed = false;
     }
 
@@ -133,39 +135,7 @@ if (!supabaseUrl) {
 
 console.log('');
 
-// 3. Razorpay Verification (Optional)
-console.log('3. Checking Razorpay (Billing & Subscriptions):');
-const rzpKey = process.env.RAZORPAY_KEY_ID;
-const rzpSecret = process.env.RAZORPAY_KEY_SECRET;
-const rzpWebhook = process.env.RAZORPAY_WEBHOOK_SECRET;
-const rzpPro = process.env.RAZORPAY_PRO_PLAN_ID;
-const rzpPlus = process.env.RAZORPAY_PLUS_PLAN_ID;
-
-if (!rzpKey || !rzpSecret || !rzpWebhook || !rzpPro || !rzpPlus) {
-  console.log('   [INFO] Razorpay credentials not fully configured.');
-  console.log('   [INFO] Application gracefully falls back to FREE mode:');
-  console.log('          - Free workspace with local & cloud sync is 100% active.');
-  console.log('          - 10 free daily AI coaching requests per user are enabled.');
-  console.log('          - Pricing page safely displays "Checkout launching soon".');
-} else {
-  try {
-    const creds = Buffer.from(rzpKey + ':' + rzpSecret).toString('base64');
-    const rRes = await fetch('https://api.razorpay.com/v1/plans/' + encodeURIComponent(rzpPro), {
-      headers: { Authorization: 'Basic ' + creds }
-    });
-    if (rRes.ok) {
-      console.log('   [PASS] Razorpay API credentials and Pro Plan verified.');
-    } else {
-      console.log(`   [FAIL] Razorpay returned HTTP ${rRes.status}. Verify Key ID and Secret.`);
-      allPassed = false;
-    }
-  } catch (e) {
-    console.log(`   [FAIL] Razorpay network request failed: ${e.message}`);
-    allPassed = false;
-  }
-}
-
-console.log('\n====================================================');
+// Payment verification is intentionally excluded from the free prototype.\n\nconsole.log('\n====================================================');
 if (allPassed) {
   console.log('Result: All configured systems are healthy and ready!');
 } else {
