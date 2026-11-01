@@ -1,85 +1,67 @@
-# CareerOS Production QA & Security Audit Report
+# CareerOS Automated QA & Security Hardening Report
 
 **Date:** November 1, 2026  
-**Status:** ALL CHECKS PASSED (63 automated tests, 18 suites, 0 failures)  
-**Branch:** `fixes-and-testing`
+**Automated CI:** 63 tests passed, 18 suites, 0 failures  
+**Release commit:** `b8341a7d4a971292e787fe3bc2d9960cc7c0965f`
 
 ---
 
-## 1. Executive Summary
+## 1. Scope and limitations
 
-An exhaustive end-to-end QA audit, security hardening, and test automation suite was completed for CareerOS. All 9 serverless API endpoints, database schemas, Row Level Security (RLS) policies, and frontend state machines were tested and verified.
+This release adds automated regression coverage and targeted security hardening. The Node.js test suite exercises API handlers with mocked upstream services, core state logic, and static security/configuration assertions.
 
-The application has been verified to function reliably and securely in a **Razorpay-free / Free Workspace mode**, providing:
-- Full interactive career planning, gap analysis, and roadmap generation.
-- Resume Studio draft generator with ATS-readable TXT and PDF export.
-- 7 interview practice labs with heuristics and prompt rubrics.
-- 10 free daily AI coaching evaluations per user via Google Gemini 2.5 Flash.
-- Private cloud synchronization via Google OAuth and Supabase PostgreSQL with strict RLS isolation.
+**These tests are not a complete end-to-end browser audit.** They do not prove live Google OAuth, multi-device synchronization, actual Gemini provider responses, admin workflows in a browser, account deletion against a real user, or every mobile/accessibility interaction. Those flows still require live validation.
 
----
+## 2. Included prototype capabilities
 
-## 2. Hardening & Defect Fixes Applied
+- Career profile, skill-gap assessment and roadmap planning.
+- Seven interview-practice rounds with local heuristic feedback.
+- Resume drafting, TXT export and browser print/PDF.
+- Application tracking.
+- Optional Gemini career, roadmap and interview reviews for signed-in users.
+- Supabase-backed private workspace sync, subject to Google OAuth and database configuration.
+- No active checkout or payment flow. Razorpay environment variables are not configured; billing is intentionally outside this prototype.
 
-### A. Backend API Hardening (`api/`)
-1. **`api/coach.js`**:
-   - Distinct HTTP status codes: Returns `401 Unauthorized` when authentication token is missing/invalid, separated from `503 Service Unavailable` when server configuration is incomplete.
-   - Robust Gemini JSON Parsing: Automatically strips markdown code fences (`/^```(?:json)?\s*/i`), enforces object return types, and prevents crashes on malformed LLM completions.
-2. **`api/create-subscription.js`**:
-   - Input validation: Rejects unknown subscription plans with `400 Bad Request` prior to service key lookup, preventing misleading 503 errors.
-3. **`api/verify-subscription.js`**:
-   - Signature validation: Enforces strict string type checking and 64-character hexadecimal format verification (`/^[a-fA-F0-9]{64}$/`) to avoid unhandled TypeErrors during cryptographic digest comparisons.
-4. **`api/delete-account.js`**:
-   - Safe JWT Decoding: Safely parses token payload in try/catch to return `401` on malformed claims rather than throwing unhandled `502`.
-5. **`api/razorpay-webhook.js`**:
-   - Stream Denial of Service Prevention: Added `MAX_WEBHOOK_BYTES = 256 * 1024` (256KB) cap in `readRaw` to prevent memory exhaustion DoS attacks from unbounded payloads. Returns `413 Payload Too Large`.
+## 3. Security and reliability changes
 
-### B. Database Schema & RLS Hardening (`supabase/schema.sql`)
-1. **Timestamp Concurrency in `upsert_careeros_subscription`**:
-   - Fixed timestamp race conditions: Allowed same-second provider webhook events (`excluded.provider_event_created_at = public.subscriptions.provider_event_created_at`) to advance subscription status if `excluded.status <> public.subscriptions.status`.
-2. **Strict Search Path**:
-   - Pinned `search_path = pg_catalog, public, pg_temp` on all stored procedures to eliminate search-path hijacking attacks.
+- Gemini API key remains server-side and is sent to Google using the `x-goog-api-key` request header, not a URL query parameter.
+- Gemini response parsing strips optional Markdown fences, validates object shape, bounds returned fields and reports provider failures with actionable status codes.
+- Free Gemini coaching uses a fixed **10-request daily per-user quota** enforced by the existing Postgres RPC. It no longer queries the `subscriptions` table or depends on paid entitlements.
+- API handlers distinguish missing authentication from missing server configuration.
+- Account deletion safely handles malformed JWT payloads and requires a recently issued access token plus an exact confirmation phrase.
+- Razorpay webhook request bodies are capped at 256 KB to limit memory-exhaustion risk. This is hardening of dormant legacy code, not an enabled payment feature.
+- Subscription signature inputs are type-checked and constrained to 64 hexadecimal characters before timing-safe comparison.
+- Subscription webhook upserts handle same-second provider events without allowing older events to overwrite newer state.
+- Client-side sorting and roadmap traversal handle empty or malformed state more safely.
+- Supabase SECURITY DEFINER functions use a pinned search path and the AI usage counter is not directly readable or writable by browser roles.
 
-### C. Client Stability Hardening (`website/js/app.js`)
-1. **Sorting Stability**:
-   - In `gaps()`, added fallback priority mapping `(imp[b.importance] || 1)` to prevent `NaN` during sort comparisons.
-2. **Safe Traversal**:
-   - Added null checks in roadmap reordering (`x && x[2] && ...`) and safe fallback in `loadq` (`Q[$('qtype').value] || Q.behavioral`).
+## 4. Automated validation
 
----
+| Suite | Coverage | Tests |
+|---|---|---:|
+| API handlers | Method/auth/input validation, quota behavior, Gemini response handling, account deletion and dormant billing-handler edge cases | 32 |
+| Core logic | Role templates, skill gaps, readiness, workspace merging and sanitization | 11 |
+| Security assertions | Secret exposure, headers, RLS/schema expectations and crawler policy | 20 |
+| **Total** | **GitHub Actions: `npm run check` succeeded** | **63 / 63 passed** |
 
-## 3. Automated Test Suite (`test/`)
+CI run: [GitHub Actions run 41337082452](https://github.com/PSP-YN/CareerOS/actions/runs/41337082452).
 
-We implemented an automated test runner leveraging native Node.js test utilities (`node:test`, `node:assert/strict`):
+## 5. Free-mode configuration
 
-| Test Suite | File | Tests | Status |
-| :--- | :--- | :---: | :---: |
-| **API Endpoints** (`/config`, `/coach`, `/create-subscription`, `/verify-subscription`, `/cancel-subscription`, `/delete-account`, `/razorpay-webhook`, `/questions`, `/admin-questions`) | `test/api.test.mjs` | 32 | **PASS** |
-| **Core Logic & State** (Fresh state, 7 role templates, gap analysis, readiness scoring, cloud merge, XSS sanitizers) | `test/core-logic.test.mjs` | 11 | **PASS** |
-| **Security Audit** (Secret leak detection, Vercel HTTP security headers, Supabase RLS isolation, crawler policies) | `test/security-audit.test.mjs` | 20 | **PASS** |
-| **Total** | | **63** | **100% PASS** |
+- `/api/config` reports `billingEnabled: false` when payment credentials are absent.
+- The application does not require Razorpay credentials for its core workspace or Gemini free quota.
+- Gemini requires a valid server-side `GEMINI_API_KEY`; Google AI Studio free-tier availability and rate limits are controlled by Google.
+- Cloud workspace sync requires Supabase public configuration, a server-side service-role key for privileged APIs, and a working Google OAuth configuration.
+- The Supabase Pro-only leaked-password protection setting remains disabled because it is not available on the current plan. This is documented as a residual platform limitation, not a code-level security fix.
 
----
+## 6. Live validation still required
 
-## 4. Operational Commands
+1. Sign in with Google and confirm the authenticated workspace state.
+2. Run one Gemini review for each task type and confirm real provider feedback is rendered.
+3. Save profile, skills and roadmap changes; reopen the same account on another device.
+4. Verify role switching does not leak the previous role's assessments or milestones.
+5. Test admin access with both admin and non-admin accounts.
+6. Test account deletion only with a disposable test account.
+7. Complete keyboard-only and narrow-screen browser checks.
 
-- Run full test and verification suite:
-  ```bash
-  npm test
-  # or
-  npm run check
-  ```
-- Run live connectivity health check (Google Gemini & Supabase):
-  ```bash
-  npm run verify:live
-  ```
-
----
-
-## 5. Razorpay-Free Operation Details
-
-When deployed without Razorpay environment variables:
-- `/api/config` automatically returns `billingEnabled: false`.
-- The Pricing page disables checkout buttons and informs users that checkout is launching soon.
-- All core features and Google Auth cloud synchronization remain 100% functional.
-- Gemini AI coaching automatically permits 10 free evaluations per user per day.
+Do not describe CareerOS as fully production-validated until these live checks are complete.
