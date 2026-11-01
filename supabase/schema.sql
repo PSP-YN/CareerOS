@@ -122,7 +122,7 @@ create or replace function public.upsert_careeros_subscription(
 language plpgsql
 security definer
 set search_path = pg_catalog, public
-as $
+as $$
 declare
   did_update boolean := false;
 begin
@@ -166,7 +166,7 @@ begin
 
   return coalesce(did_update, false);
 end;
-$;
+$$;
 
 revoke all on function public.upsert_careeros_subscription(uuid,text,text,text,timestamptz,timestamptz,bigint) from public, anon, authenticated;
 grant execute on function public.upsert_careeros_subscription(uuid,text,text,text,timestamptz,timestamptz,bigint) to service_role;
