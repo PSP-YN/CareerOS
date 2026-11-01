@@ -1,8 +1,15 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 export const config = { api: { bodyParser: false } };
+const MAX_WEBHOOK_BYTES = 256 * 1024;
 async function readRaw(req) {
   const chunks = [];
-  for await (const chunk of req) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  let totalBytes = 0;
+  for await (const chunk of req) {
+    const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+    totalBytes += buf.length;
+    if (totalBytes > MAX_WEBHOOK_BYTES) throw new Error('Payload too large');
+    chunks.push(buf);
+  }
   return Buffer.concat(chunks);
 }
 export default async function handler(req, res) {
@@ -55,5 +62,8 @@ export default async function handler(req, res) {
     if (!saved.ok) return res.status(503).end('Could not persist subscription event');
     const applied = await saved.json().catch(() => false);
     return res.status(200).json({ received: true, stale: applied !== true });
-  } catch { return res.status(400).end('Invalid webhook payload'); }
+  } catch (err) {
+    if (err.message === 'Payload too large') return res.status(413).end('Payload too large');
+    return res.status(400).end('Invalid webhook payload');
+  }
 }

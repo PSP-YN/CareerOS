@@ -163,6 +163,7 @@ begin
     end,
     updated_at = now()
   where excluded.provider_event_created_at > public.subscriptions.provider_event_created_at
+     or (excluded.provider_event_created_at = public.subscriptions.provider_event_created_at and excluded.status <> public.subscriptions.status)
   returning true into did_update;
 
   return coalesce(did_update, false);

@@ -13,6 +13,9 @@ export default async function handler(req, res) {
   const user = await getUser(req).catch(() => null);
   if (!user?.id || !user.email) return res.status(401).json({ error: 'Sign in with Google before subscribing.' });
   const plan = req.body?.plan;
+  if (!['pro', 'career_plus'].includes(plan)) {
+    return res.status(400).json({ error: 'Invalid subscription plan.' });
+  }
   const planMap = {
     pro: { id: process.env.RAZORPAY_PRO_PLAN_ID },
     career_plus: { id: process.env.RAZORPAY_PLUS_PLAN_ID }

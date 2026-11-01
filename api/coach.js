@@ -19,8 +19,11 @@ export default async function handler(req, res) {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const authorization = req.headers.authorization || '';
   const token = authorization.startsWith('Bearer ') ? authorization.slice(7) : '';
-  if (!supabaseUrl || !anonKey || !serviceKey || !token) {
-    return res.status(503).json({ error: 'AI coaching is not configured. Sign in and complete the server configuration.' });
+  if (!supabaseUrl || !anonKey || !serviceKey) {
+    return res.status(503).json({ error: 'AI coaching is not configured. Complete the server configuration.' });
+  }
+  if (!token) {
+    return res.status(401).json({ error: 'Sign in again to continue.' });
   }
 
   let userResponse;
@@ -52,21 +55,9 @@ export default async function handler(req, res) {
     return res.status(503).json({ error: 'Gemini is not configured. Local interview feedback remains available.' });
   }
 
-  // Determine paid entitlements only from webhook-confirmed active subscriptions.
-  let dailyLimit = 10;
-  try {
-    const planResponse = await fetch(
-      supabaseUrl + '/rest/v1/subscriptions?user_id=eq.' + encodeURIComponent(user.id) +
-      '&status=eq.active&select=plan&order=updated_at.desc&limit=1',
-      { headers: { apikey: serviceKey, Authorization: 'Bearer ' + serviceKey } }
-    );
-    if (!planResponse.ok) return res.status(503).json({ error: 'Subscription entitlements could not be checked.' });
-    const active = await planResponse.json();
-    if (active?.[0]?.plan === 'pro') dailyLimit = 50;
-    if (active?.[0]?.plan === 'career_plus') dailyLimit = 150;
-  } catch {
-    return res.status(503).json({ error: 'Subscription entitlements could not be checked.' });
-  }
+  // CareerOS is operating as a free prototype: no paid-plan lookup or billing dependency.
+  // Enforce one server-side free allowance for every signed-in account.
+  const dailyLimit = 10;
 
   // Atomic daily quota is enforced in Postgres; the service-role key never leaves this function.
   try {
@@ -152,8 +143,15 @@ export default async function handler(req, res) {
       return res.status(502).json({ code: 'GEMINI_EMPTY_RESPONSE', error: 'Gemini returned no usable feedback. Try again with a shorter answer or more specific context.' });
     }
     let result;
-    try { result = JSON.parse(output); } catch {
+    try {
+      const cleaned = output.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+      result = JSON.parse(cleaned);
+    } catch {
       console.error('[CareerOS Gemini] Model returned invalid JSON');
+      return res.status(502).json({ code: 'GEMINI_INVALID_RESPONSE', error: 'Gemini returned feedback in an unexpected format. Try again.' });
+    }
+    if (!result || typeof result !== 'object' || Array.isArray(result)) {
+      console.error('[CareerOS Gemini] Model returned non-object JSON');
       return res.status(502).json({ code: 'GEMINI_INVALID_RESPONSE', error: 'Gemini returned feedback in an unexpected format. Try again.' });
     }
     return res.status(200).json({
