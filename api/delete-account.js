@@ -31,7 +31,12 @@ export default async function handler(req, res) {
     // Require a recently issued, Supabase-validated access token before a destructive action.
     const tokenPayload = token.split('.')[1];
     if (!tokenPayload) return res.status(401).json({ error: 'Please sign in again before deleting your account.' });
-    const claims = JSON.parse(Buffer.from(tokenPayload, 'base64url').toString('utf8'));
+    let claims;
+    try {
+      claims = JSON.parse(Buffer.from(tokenPayload, 'base64url').toString('utf8'));
+    } catch {
+      return res.status(401).json({ error: 'Please sign in again before deleting your account.' });
+    }
     const issuedAt = Number(claims.iat);
     if (!Number.isFinite(issuedAt) || Date.now() / 1000 - issuedAt > 15 * 60 || issuedAt > Date.now() / 1000 + 60) {
       return res.status(401).json({ error: 'For your protection, sign out and sign in again before deleting your account.' });

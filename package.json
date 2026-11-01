@@ -7,7 +7,8 @@
     "node": ">=20"
   },
   "scripts": {
-    "check": "node scripts/verify.mjs",
-    "test": "npm run check"
+    "check": "node scripts/verify.mjs && node --test test/*.test.mjs",
+    "test": "npm run check",
+    "verify:live": "node scripts/verify-live.mjs"
   }
 }

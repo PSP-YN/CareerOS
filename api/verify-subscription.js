@@ -17,6 +17,14 @@ export default async function handler(req, res) {
   if (!secret || !razorpay_payment_id || !razorpay_subscription_id || !razorpay_signature) {
     return res.status(400).json({ error: 'Payment verification data is incomplete.' });
   }
+  if (
+    typeof razorpay_payment_id !== 'string' ||
+    typeof razorpay_subscription_id !== 'string' ||
+    typeof razorpay_signature !== 'string' ||
+    !/^[a-fA-F0-9]{64}$/.test(razorpay_signature)
+  ) {
+    return res.status(400).json({ error: 'Payment verification data is invalid.' });
+  }
   const expected = createHmac('sha256', secret).update(razorpay_payment_id + '|' + razorpay_subscription_id).digest();
   const supplied = Buffer.from(razorpay_signature, 'hex');
   if (supplied.length !== expected.length || !timingSafeEqual(expected, supplied)) {
