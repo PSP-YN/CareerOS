@@ -4,8 +4,8 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 const required = [
-  'index.html','app.html','styles.css','logo.svg','favicon.svg','auth.js','ai.js','ads.js','billing.js',
-  'api/config.js','api/coach.js','api/create-subscription.js','api/verify-subscription.js',
+  'index.html','app.html','admin.html','admin.js','question-bank.js','styles.css','logo.svg','favicon.svg','auth.js','ai.js','ads.js','billing.js',
+  'api/config.js','api/coach.js','api/questions.js','api/admin-questions.js','api/create-subscription.js','api/verify-subscription.js',
   'api/razorpay-webhook.js','api/delete-account.js','api/cancel-subscription.js','supabase/schema.sql','sitemap.xml','llms.txt','robots.txt','README.md','vercel.json'
 ];
 for (const file of required) if (!existsSync(file)) throw new Error('Missing required file: ' + file);
@@ -17,7 +17,7 @@ if (!app.includes("function fresh(){return{profile:{role:'',experience:'',timeli
 if (app.includes("done:[true,true") || app.includes("D.map(x=>({name:x[0],level:x[1]")) {
   throw new Error('Seeded skill levels or completed roadmap milestones remain in the app initializer.');
 }
-if (!app.includes('Number(x.level)>0&&x.level<x.required') || !app.includes('if(!S.skills.length||S.skills.some(x=>Number(x.level)===0))return null')) {
+if (!app.includes('Number(x.level)>0&&x.level<x.required') || !app.includes('if(!S.profile.role||!S.skills.length||S.skills.some(x=>Number(x.level)===0))return null')) {
   throw new Error('Unassessed skills must not be counted as actual skill gaps or an overall readiness score.');
 }
 if (app.includes('Data is saved in this browser only. No account or cloud sync is implemented.')) {
@@ -72,12 +72,18 @@ try {
 } finally { rmSync(temp,{recursive:true,force:true}); }
 
 const jsFiles = [
-  'auth.js','ai.js','ads.js','billing.js','api/config.js','api/coach.js',
+  'auth.js','ai.js','ads.js','billing.js','admin.js','question-bank.js','api/config.js','api/coach.js','api/questions.js','api/admin-questions.js',
   'api/create-subscription.js','api/verify-subscription.js','api/razorpay-webhook.js','api/delete-account.js','api/cancel-subscription.js'
 ];
 for (const file of jsFiles) {
   const check = spawnSync(process.execPath,['--check',file],{encoding:'utf8'});
   if (check.status !== 0) throw new Error(file + ': ' + check.stderr);
+}
+const questionBank = readFileSync('question-bank.js','utf8');
+for (const round of ['aptitude','coding','technical']) if ((questionBank.match(new RegExp(round + ': \\[','g')) || []).length !== 1) throw new Error('Missing expanded question bank: '+round);
+for (const marker of ['interview_questions','app_metadata?.role !== \'admin\'','x-goog-api-key']) {
+  const source = marker === 'interview_questions' ? readFileSync('supabase/schema.sql','utf8') : marker === 'x-goog-api-key' ? readFileSync('api/coach.js','utf8') : readFileSync('api/admin-questions.js','utf8');
+  if (!source.includes(marker)) throw new Error('Missing admin/security control: '+marker);
 }
 const schema = readFileSync('supabase/schema.sql','utf8');
 for (const marker of ['enable row level security','No direct user access to AI usage counters','consume_careeros_ai_quota','upsert_careeros_subscription','provider_event_created_at','service_role','subscriptions']) {
@@ -110,4 +116,4 @@ const billing = readFileSync('billing.js','utf8');
 if (!billing.includes('/api/cancel-subscription') || !billing.includes('cancel_at_cycle_end')) {
   throw new Error('Self-service billing management is incomplete.');
 }
-console.log('CareerOS checks passed: application controls, role templates, interview rounds, SEO, JavaScript syntax, Supabase RLS, AI quotas, account deletion and subscription management.');
+console.log('CareerOS checks passed: application controls, role templates, expanded interview bank, admin authorization, SEO, JavaScript syntax, Supabase RLS, AI quotas, account deletion and subscription management.');

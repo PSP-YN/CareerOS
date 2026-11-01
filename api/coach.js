@@ -4,6 +4,11 @@ const MAX_CONTEXT_CHARS = 10000;
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store, max-age=0');
   res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Vary', 'Authorization');
+  res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
+  if (req.method === 'POST' && Number(req.headers['content-length'] || 0) > 16000) {
+    return res.status(413).json({ error: 'Request body is too large.' });
+  }
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'Method not allowed' });
@@ -95,14 +100,14 @@ export default async function handler(req, res) {
 
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 18000);
+    const timeout = setTimeout(() => controller.abort(), 15000);
     let upstream;
     try {
       upstream = await fetch(
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + encodeURIComponent(process.env.GEMINI_API_KEY),
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY },
           signal: controller.signal,
           body: JSON.stringify({
             contents: [{ parts: [{ text: prompt }] }],
