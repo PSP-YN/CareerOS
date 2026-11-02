@@ -25,8 +25,8 @@
   function updateConsentCopy() {
     const hasPersonalKey = !!storage.getItem(apiKeyName(provider.value));
     const copy = hasPersonalKey
-      ? 'I consent to send this selected context to my chosen AI provider using my own API key. Provider data handling, quotas and charges apply.'
-      : 'I confirm I removed personal, sensitive, confidential and proprietary details. I consent to send generalized context to CareerOS hosted Gemini. Google may use unpaid-tier prompts/responses to improve products and human reviewers may process them.';
+      ? 'I confirm I am 18 or older and consent to send this selected context to my chosen AI provider using my own API key. Provider data handling, quotas and charges apply.'
+      : 'I confirm I am 18 or older and removed personal, sensitive, confidential and proprietary details. I consent to send generalized context to CareerOS hosted Gemini. Google may use unpaid-tier prompts/responses to improve products and human reviewers may process them.';
     ['careerAiConsent','roadmapAiConsent','aiConsent'].forEach(id => {
       const checkbox = $(id);
       const label = checkbox?.closest('label');
