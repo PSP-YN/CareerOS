@@ -47,6 +47,8 @@ for(const round of ['aptitude','coding','technical','system_design','case_study'
   if(!Array.isArray(fullScale[round])||fullScale[round].length<20) throw Error('Full-scale question pool missing: '+round);
 if(!appHtml.includes('/data/full-scale-questions.js')||!appHtml.includes('/js/interview-engine.js')||!appHtml.includes('/js/decision-studio.js'))
   throw Error('Full-scale interview and decision studio scripts must be loaded by the workspace.');
+if(!readText('website/js/interview-engine.js').includes('CareerOSFullScaleQuestions'))
+  throw Error('The structured mock must actually draw questions from the full-scale question bank.');
 if(!appHtml.includes('data-tab="decisions"')||!appHtml.includes('id="decisions"')||!appHtml.includes('id="startFullMock"'))
   throw Error('Decision Studio and full mock interview controls are required.');
 const authSource=readText('website/js/auth.js');
@@ -100,8 +102,10 @@ for(const page of ['website/index.html','website/app.html','website/admin.html',
 const jsFiles=[...staticFiles.filter(x=>x.endsWith('.js')),...['api/coach.js','api/config.js','api/questions.js','api/admin-questions.js','api/delete-account.js']];
 for(const file of jsFiles){const result=spawnSync(process.execPath,['--check',file],{encoding:'utf8'});if(result.status!==0)throw Error(file+': '+result.stderr);}
 const schema=readText('supabase/schema.sql'),auth=readText('website/js/auth.js'),coach=readText('api/coach.js'),admin=readText('api/admin-questions.js');
-if(!schema.includes('revoke all on public.subscriptions from anon;'))
-  throw Error('Anonymous role must not have direct subscription table privileges.');
+if(!schema.includes('revoke all on public.subscriptions from public, anon, authenticated;'))
+  throw Error('Client roles must not have direct subscription table privileges.');
+if(!schema.includes('revoke all on public.user_workspaces from public, anon, authenticated;')||!schema.includes('grant select, insert, update on public.user_workspaces to authenticated;'))
+  throw Error('Workspace table grants must follow least privilege.');
 for(const marker of ['enable row level security','user_workspaces','interview_questions','consume_careeros_ai_quota','service_role'])
   if(!schema.includes(marker))throw Error('Supabase schema missing '+marker);
 for(const marker of ['persistSession: true','autoRefreshToken: true','window.localStorage','syncWorkspace'])

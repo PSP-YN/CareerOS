@@ -79,6 +79,7 @@ describe('API: /api/coach', () => {
     process.env.SUPABASE_ANON_KEY = 'anon-key';
     process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-key';
     process.env.GEMINI_API_KEY = 'gemini-key';
+    process.env.GEMINI_PAID_DATA_PROCESSING = 'true';
   });
 
   afterEach(() => {
@@ -173,6 +174,29 @@ describe('API: /api/coach', () => {
     await coachHandler(req, res);
     assert.equal(res.statusCode, 400);
     assert.match(res.body.error, /explicit consent/i);
+  });
+
+  test('blocks Gemini requests unless billing-backed data processing is explicitly enabled', async () => {
+    delete process.env.GEMINI_PAID_DATA_PROCESSING;
+    let quotaCalled = false;
+    let geminiCalled = false;
+    restoreFetch = mockFetch(async url => {
+      if (url.includes('/auth/v1/user')) return { ok: true, json: async () => ({ id: 'usr-123' }) };
+      if (url.includes('/rpc/consume_careeros_ai_quota')) quotaCalled = true;
+      if (url.includes('generativelanguage.googleapis.com')) geminiCalled = true;
+      return { ok: true, json: async () => true };
+    });
+    const req = createMockReq({
+      method: 'POST',
+      headers: { authorization: 'Bearer good-token' },
+      body: { task: 'interview_feedback', context: { answer: 'A sufficiently detailed practice answer.' }, consent: true }
+    });
+    const res = createMockRes();
+    await coachHandler(req, res);
+    assert.equal(res.statusCode, 503);
+    assert.equal(res.body.code, 'GEMINI_PAID_PROCESSING_REQUIRED');
+    assert.equal(quotaCalled, false);
+    assert.equal(geminiCalled, false);
   });
 
   test('returns 429 when daily quota is exhausted', async () => {

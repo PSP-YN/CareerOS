@@ -42,8 +42,9 @@
   function buildSequence() {
     const base = window.CareerOSContent.questions || {};
     const bank = window.CareerOSQuestionBank || {};
+    const fullScale = window.CareerOSFullScaleQuestions || {};
     return rounds.flatMap(round => {
-      const combined = [...(base[round] || []), ...(bank[round] || [])];
+      const combined = [...(base[round] || []), ...(bank[round] || []), ...(fullScale[round] || [])];
       const seen = new Set();
       const unique = combined.filter(item => {
         if (!Array.isArray(item) || typeof item[0] !== 'string' || seen.has(item[0])) return false;
