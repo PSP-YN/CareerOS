@@ -90,7 +90,7 @@ create or replace function public.reserve_careeros_ai_quota(
 language plpgsql
 security definer
 set search_path = pg_catalog, public, pg_temp
-as $
+as $quota$
 declare
   charged_date date := (now() at time zone 'utc')::date;
   new_count integer;
@@ -111,7 +111,7 @@ begin
   end if;
   return charged_date;
 end;
-$;
+$quota$;
 
 -- Roll back one reservation after a provider/network/response failure.
 -- The exact date returned by reserve is supplied so midnight UTC cannot refund the wrong day.
@@ -122,7 +122,7 @@ create or replace function public.release_careeros_ai_quota(
 language plpgsql
 security definer
 set search_path = pg_catalog, public, pg_temp
-as $
+as $quota$
 declare
   remaining_count integer;
 begin
@@ -150,7 +150,7 @@ begin
 
   return true;
 end;
-$;
+$quota$;
 
 revoke all on function public.reserve_careeros_ai_quota(uuid, integer) from public, anon, authenticated;
 revoke all on function public.release_careeros_ai_quota(uuid, date) from public, anon, authenticated;
