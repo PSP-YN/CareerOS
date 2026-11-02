@@ -25,6 +25,13 @@
     } catch {}
   }
   function escapeText(value) { return String(value ?? ''); }
+  function updateConsentCopy() {
+    const hosted = prefs.mode !== 'byok';
+    const text = hosted
+      ? 'I agree to send this selected context to CareerOS hosted Gemini. I removed personal, sensitive, confidential and proprietary details. Google may use free-tier prompts/responses to improve its products and human reviewers may process them.'
+      : 'I agree to send this selected context directly to my configured AI provider. I have reviewed that provider’s data policy and key security.';
+    document.querySelectorAll('.ai-consent-copy').forEach(node => { node.textContent = text; });
+  }
   function installSettings() {
     const tools = document.querySelector('.auth-tools');
     if (!tools || document.getElementById('aiSettingsToggle')) return;
@@ -59,7 +66,7 @@
     mode.value = prefs.mode; provider.value = prefs.provider; model.value = prefs.model; endpoint.value = prefs.endpoint; remember.checked = !!prefs.remember;
     if (prefs.key) key.value = prefs.key;
     const render = () => { panel.querySelector('#byokSettings').hidden = mode.value !== 'byok'; panel.querySelector('#aiEndpointWrap').hidden = provider.value !== 'openai'; };
-    mode.addEventListener('change', () => { prefs.mode = mode.value; render(); savePrefs(); });
+    mode.addEventListener('change', () => { prefs.mode = mode.value; render(); savePrefs(); updateConsentCopy(); });
     provider.addEventListener('change', () => { prefs.provider = provider.value; model.value = provider.value === 'gemini' ? 'gemini-3.8-flash' : 'gpt-4o-mini'; prefs.model = model.value; render(); });
     panel.querySelector('#aiSaveKey').addEventListener('click', () => {
       prefs = { ...prefs, mode: mode.value, provider: provider.value, model: model.value.trim(), endpoint: endpoint.value.trim(), key: key.value.trim(), remember: remember.checked };
@@ -74,6 +81,7 @@
     endpoint.addEventListener('change', () => { prefs.endpoint = endpoint.value.trim(); });
     remember.addEventListener('change', () => { prefs.remember = remember.checked; });
     render();
+    updateConsentCopy();
   }
 
   function showFeedback(target, heading, result, modelLabel) {
@@ -133,7 +141,7 @@
         } else {
           const token=await window.CareerOSAuth?.getAccessToken();
           if(!token) throw new Error('Sign in to use CareerOS hosted AI. Or select “Use my own API key / model” in AI settings.');
-          const response=await fetch('/api/coach',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},cache:'no-store',body:JSON.stringify({task,context,consent:true})});
+          const response=await fetch('/api/coach',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},cache:'no-store',body:JSON.stringify({task,context,consent:true,freeTierDataAcknowledged:true})});
           const payload=await response.json().catch(()=>({}));
           if(!response.ok) throw new Error(payload.error||'Hosted AI review is temporarily unavailable.');
           showFeedback(feedback,heading,payload.result||{},'CareerOS hosted · '+(payload.quota?.dailyLimit||2)+' reviews/day');
