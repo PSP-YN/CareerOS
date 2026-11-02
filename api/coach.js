@@ -10,7 +10,7 @@ const PROVIDERS = {
 const MAX_CONTEXT_CHARS = 10000;
 const MAX_KEY_CHARS = 500;
 const PRIVATE_FIELD = /(?:full.?name|first.?name|last.?name|email|phone|mobile|address|linkedin|github|portfolio|website|resume|contact|date.?of.?birth|dob|aadhaar|passport|national.?id)/i;
-function sanitizeHostedContext(value, key = '') {
+export function sanitizeHostedContext(value, key = '') {
   if (PRIVATE_FIELD.test(key)) return '[redacted]';
   if (typeof value === 'string') return value
     .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[email redacted]')
