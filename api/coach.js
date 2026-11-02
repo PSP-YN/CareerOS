@@ -130,17 +130,28 @@ export default async function handler(req, res) {
       : { model, messages: [{ role: 'system', content: 'Return only JSON with summary, next_actions, caveats. Career coaching must be evidence-based and not invent outcomes.' }, { role: 'user', content: prompt }], response_format: { type: 'json_object' }, max_tokens: 900 };
 
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 20000);
-    let upstream;
-    try {
-      const headers = { 'Content-Type': 'application/json' };
-      const endpoint = provider.kind === 'gemini' ? provider.endpoint(model) : provider.endpoint;
-      if (provider.kind === 'gemini') headers['x-goog-api-key'] = apiKey;
-      else if (provider.kind === 'anthropic') { headers['x-api-key'] = apiKey; headers['anthropic-version'] = '2023-06-01'; }
-      else headers.Authorization = 'Bearer ' + apiKey;
-      upstream = await fetch(endpoint, { method: 'POST', headers, signal: controller.signal, body: JSON.stringify(requestBody) });
-    } finally { clearTimeout(timeout); }
+    const requestProvider = async (modelId) => {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 20000);
+      try {
+        const headers = { 'Content-Type': 'application/json' };
+        const endpoint = provider.kind === 'gemini' ? provider.endpoint(modelId) : provider.endpoint;
+        if (provider.kind === 'gemini') headers['x-goog-api-key'] = apiKey;
+        else if (provider.kind === 'anthropic') { headers['x-api-key'] = apiKey; headers['anthropic-version'] = '2023-06-01'; }
+        else headers.Authorization = 'Bearer ' + apiKey;
+        const body = provider.kind === 'gemini' ? requestBody : { ...requestBody, model: modelId };
+        return await fetch(endpoint, { method: 'POST', headers, signal: controller.signal, body: JSON.stringify(body) });
+      } finally { clearTimeout(timeout); }
+    };
+    let effectiveModel = model;
+    let upstream = await requestProvider(effectiveModel);
+    // Hosted CareerOS can fail over once on temporary Gemini overload. BYOK requests
+    // must honor the user's selected model and must never silently change providers/models.
+    if (!upstream.ok && upstream.status === 503 && !byok && providerId === 'gemini' && model === 'gemini-3.8-flash') {
+      console.warn('[CareerOS AI] Gemini 3.8 overloaded; trying stable Gemini 3.6 Flash fallback.');
+      effectiveModel = 'gemini-3.6-flash';
+      upstream = await requestProvider(effectiveModel);
+    }
     const raw = await upstream.text();
     let data = {}; try { data = raw ? JSON.parse(raw) : {}; } catch {}
     if (!upstream.ok) {
@@ -165,7 +176,8 @@ export default async function handler(req, res) {
         caveats: Array.isArray(result.caveats) ? result.caveats.filter(x => typeof x === 'string').slice(0, 4).map(x => x.slice(0, 300)) : []
       },
       provider: providerId,
-      model,
+      model: effectiveModel,
+      ...(effectiveModel !== model ? { fallbackFrom: model } : {}),
       quota: byok ? { mode: 'byok', dailyLimit: null } : { mode: 'careeros-free', dailyLimit }
     });
   } catch {

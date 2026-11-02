@@ -6,15 +6,17 @@ const envKeys = ['SUPABASE_URL','SUPABASE_ANON_KEY','SUPABASE_SERVICE_ROLE_KEY',
 const originalEnv = Object.fromEntries(envKeys.map(key => [key, process.env[key]]));
 const originalFetch = globalThis.fetch;
 
-function setupFetch({ providerStatus = 200, quotaDate = '2026-11-02' } = {}) {
+function setupFetch({ providerStatus = 200, providerStatuses = null, quotaDate = '2026-11-02' } = {}) {
   const calls = [];
+  let providerCall = 0;
   globalThis.fetch = async (url, options = {}) => {
     calls.push({ url: String(url), options });
     if (String(url).endsWith('/auth/v1/user')) return new Response(JSON.stringify({ id: '00000000-0000-4000-8000-000000000001' }), { status: 200 });
     if (String(url).endsWith('/rpc/reserve_careeros_ai_quota')) return new Response(JSON.stringify(quotaDate), { status: 200 });
     if (String(url).endsWith('/rpc/release_careeros_ai_quota')) return new Response('true', { status: 200 });
     if (String(url).includes('generativelanguage.googleapis.com')) {
-      if (providerStatus !== 200) return new Response(JSON.stringify({ error: { message: 'simulated provider failure' } }), { status: providerStatus });
+      const status = providerStatuses ? providerStatuses[providerCall++] ?? 200 : providerStatus;
+      if (status !== 200) return new Response(JSON.stringify({ error: { message: 'simulated provider failure' } }), { status });
       return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify({ summary: 'A useful review.', next_actions: ['Build one project.'], caveats: [] }) }] } }] }), { status: 200 });
     }
     throw new Error('Unexpected fetch URL: ' + url);
@@ -58,6 +60,21 @@ test('successful valid hosted analysis commits exactly one daily reservation', a
   const result = await invoke();
   assert.equal(result.statusCode, 200);
   assert.equal(result.payload.result.summary, 'A useful review.');
+  assert.equal(calls.filter(x => x.url.endsWith('/rpc/reserve_careeros_ai_quota')).length, 1);
+  assert.equal(calls.filter(x => x.url.endsWith('/rpc/release_careeros_ai_quota')).length, 0);
+});
+
+
+test('hosted Gemini 3.8 overload retries once on Gemini 3.6 without consuming a second quota slot', async () => {
+  const calls = setupFetch({ providerStatuses: [503, 200] });
+  const result = await invoke();
+  const providerCalls = calls.filter(x => x.url.includes('generativelanguage.googleapis.com'));
+  assert.equal(result.statusCode, 200);
+  assert.equal(providerCalls.length, 2);
+  assert.match(providerCalls[0].url, /gemini-3\.8-flash/);
+  assert.match(providerCalls[1].url, /gemini-3\.6-flash/);
+  assert.equal(result.payload.model, 'gemini-3.6-flash');
+  assert.equal(result.payload.fallbackFrom, 'gemini-3.8-flash');
   assert.equal(calls.filter(x => x.url.endsWith('/rpc/reserve_careeros_ai_quota')).length, 1);
   assert.equal(calls.filter(x => x.url.endsWith('/rpc/release_careeros_ai_quota')).length, 0);
 });
