@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createMockReq, createMockRes, mockFetch } from './helpers.mjs';
 
 import configHandler from '../api/config.js';
-import coachHandler from '../api/coach.js';
+import coachHandler, { sanitizeHostedContext } from '../api/coach.js';
 import deleteAccountHandler from '../api/delete-account.js';
 import questionsHandler from '../api/questions.js';
 import adminQuestionsHandler from '../api/admin-questions.js';
@@ -41,6 +41,18 @@ describe('API: /api/config', () => {
     assert.equal(res.body.error, 'Invalid Supabase project URL.');
   });
 
+  test('exposes Vercel commit SHA for deployment verification without exposing secrets', () => {
+    process.env.SUPABASE_URL = 'https://valid-project.supabase.co';
+    process.env.SUPABASE_ANON_KEY = 'anon-key';
+    process.env.VERCEL_GIT_COMMIT_SHA = 'abcdef1234567890';
+    const req = createMockReq({ method: 'GET' });
+    const res = createMockRes();
+    configHandler(req, res);
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.body.gitCommit, 'abcdef1234567890');
+    assert.equal(JSON.stringify(res.body).includes('service-role'), false);
+  });
+
   test('reports billingEnabled=false when environment credentials are incomplete', () => {
     process.env.SUPABASE_URL = 'https://valid-project.supabase.co';
     process.env.SUPABASE_ANON_KEY = 'anon-key';
@@ -68,6 +80,17 @@ describe('API: /api/config', () => {
     assert.equal(res.statusCode, 200);
     assert.equal(res.body.billingEnabled, false);
   });;
+});
+
+test('hosted AI context redacts API keys, tokens and private fields', () => {
+  const sanitized = sanitizeHostedContext({
+    profile: { email: 'someone@example.com', apiKey: 'secret-key', role: 'Student developer' },
+    notes: 'Key: sk-123456789012345678901234 and Bearer abcdefghijklmnopqrstuvwxyz123456'
+  });
+  assert.equal(sanitized.profile.email, '[redacted]');
+  assert.equal(sanitized.profile.apiKey, '[redacted]');
+  assert.ok(!JSON.stringify(sanitized).includes('sk-123456789012345678901234'));
+  assert.ok(!JSON.stringify(sanitized).includes('abcdefghijklmnopqrstuvwxyz123456'));
 });
 
 describe('API: /api/coach', () => {
