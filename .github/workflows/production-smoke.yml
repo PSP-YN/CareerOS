@@ -1,0 +1,29 @@
+name: Production smoke test
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: Optional production or preview URL
+        required: false
+        type: string
+  schedule:
+    - cron: '17 3 * * *'
+permissions:
+  contents: read
+concurrency:
+  group: production-smoke
+  cancel-in-progress: false
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Verify production deployment
+        env:
+          CAREEROS_URL: ${{ inputs.base_url || 'https://careeros-intelligence.vercel.app' }}
+        run: node scripts/verify-production.mjs
