@@ -203,8 +203,8 @@ describe('API: /api/coach', () => {
     let quotaCalled = false;
     restoreFetch = mockFetch(async url => {
       if (url.includes('/auth/v1/user')) return { ok: true, json: async () => ({ id: 'usr-123' }) };
-      if (url.includes('/rpc/consume_careeros_ai_quota')) quotaCalled = true;
-      return { ok: true, json: async () => true };
+      if (url.includes('/rpc/reserve_careeros_ai_quota')) quotaCalled = true;
+      return { ok: true, json: async () => '2026-11-02' };
     });
     const req = createMockReq({
       method: 'POST',
@@ -223,7 +223,7 @@ describe('API: /api/coach', () => {
     let providerCalled = false;
     restoreFetch = mockFetch(async url => {
       if (url.includes('/auth/v1/user')) return { ok: true, json: async () => ({ id: 'usr-123' }) };
-      if (url.includes('/rpc/consume_careeros_ai_quota')) quotaCalled = true;
+      if (url.includes('/rpc/reserve_careeros_ai_quota')) quotaCalled = true;
       if (url.includes('generativelanguage.googleapis.com')) providerCalled = true;
       return { ok: true, json: async () => true };
     });
@@ -245,8 +245,8 @@ describe('API: /api/coach', () => {
       if (url.includes('/auth/v1/user')) {
         return { ok: true, json: async () => ({ id: 'usr-123' }) };
       }
-      if (url.includes('/rest/v1/rpc/consume_careeros_ai_quota')) {
-        return { ok: true, json: async () => false };
+      if (url.includes('/rest/v1/rpc/reserve_careeros_ai_quota')) {
+        return { ok: true, json: async () => null };
       }
       return { ok: true };
     });
@@ -266,7 +266,7 @@ describe('API: /api/coach', () => {
       if (url.includes('/auth/v1/user')) {
         return { ok: true, json: async () => ({ id: 'usr-123' }) };
       }
-      if (url.includes('/rest/v1/rpc/consume_careeros_ai_quota')) {
+      if (url.includes('/rest/v1/rpc/reserve_careeros_ai_quota')) {
         return { ok: true, json: async () => true };
       }
       if (url.includes('generativelanguage.googleapis.com')) {
