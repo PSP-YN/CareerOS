@@ -34,7 +34,7 @@ jobs:
         run: |
           set -euo pipefail
           base="https://careeros-intelligence.vercel.app"
-          for path in / /about /pricing /career-pivot-guide /app; do
+          for path in / /about /pricing /career-pivot-guide /app /robots.txt /sitemap.xml /llms.txt /llms-full.txt; do
             code=$(curl --silent --show-error --output /dev/null --write-out "%{http_code}" --max-time 20 "$base$path")
             echo "$path -> $code"
             test "$code" = "200"
