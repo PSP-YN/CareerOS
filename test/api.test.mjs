@@ -267,7 +267,7 @@ describe('API: /api/coach', () => {
         return { ok: true, json: async () => ({ id: 'usr-123' }) };
       }
       if (url.includes('/rest/v1/rpc/reserve_careeros_ai_quota')) {
-        return { ok: true, json: async () => true };
+        return { ok: true, json: async () => '2026-11-02' };
       }
       if (url.includes('generativelanguage.googleapis.com')) {
         const payload = {
