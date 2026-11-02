@@ -41,6 +41,18 @@ describe('API: /api/config', () => {
     assert.equal(res.body.error, 'Invalid Supabase project URL.');
   });
 
+  test('exposes Vercel commit SHA for deployment verification without exposing secrets', () => {
+    process.env.SUPABASE_URL = 'https://valid-project.supabase.co';
+    process.env.SUPABASE_ANON_KEY = 'anon-key';
+    process.env.VERCEL_GIT_COMMIT_SHA = 'abcdef1234567890';
+    const req = createMockReq({ method: 'GET' });
+    const res = createMockRes();
+    configHandler(req, res);
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.body.gitCommit, 'abcdef1234567890');
+    assert.equal(JSON.stringify(res.body).includes('service-role'), false);
+  });
+
   test('reports billingEnabled=false when environment credentials are incomplete', () => {
     process.env.SUPABASE_URL = 'https://valid-project.supabase.co';
     process.env.SUPABASE_ANON_KEY = 'anon-key';
