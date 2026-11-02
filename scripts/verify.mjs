@@ -131,7 +131,7 @@ if(app.includes("push([item.question,item.rubric])}loadq()})"))
   throw Error('Late custom-question responses must not clear an in-progress interview answer.');
 if(auth.includes("storageKey: 'careeros-auth-v1'") || readText('website/js/admin.js').includes("storageKey:'careeros-auth-v1'"))
   throw Error('Use the existing Supabase auth storage key to preserve returning sessions.');
-if((schema.match(/set search_path = pg_catalog, public, pg_temp/g)||[]).length!==2)
+if((schema.match(/set search_path = pg_catalog, public, pg_temp/g)||[]).length!==4)
   throw Error('SECURITY DEFINER functions must pin pg_temp last in search_path.');
 
 
