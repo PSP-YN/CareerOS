@@ -81,7 +81,7 @@ if(landing.indexOf('<section class="closing-cta">')>landing.indexOf('<footer cla
 for(const marker of ['rel="canonical"','application/ld+json','FAQPage','/assets/styles.css','/js/ads.js'])
   if(!landing.includes(marker)) throw Error('Landing page marker missing: '+marker);
 
-const ldScripts=[...landing.matchAll(/<script type="application\\/ld\\+json">([\\s\\S]*?)<\\/script>/g)];
+const ldScripts=[...landing.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)];
 if(ldScripts.length<2) throw Error('Homepage should include Organization/SoftwareApplication and FAQ structured data.');
 for(const block of ldScripts) JSON.parse(block[1]);
 if(!exists('website/llms.txt')||!exists('website/llms-full.txt')) throw Error('GEO crawler reference files are missing.');
