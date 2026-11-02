@@ -18,11 +18,13 @@ Terms: https://careeros-intelligence.vercel.app/terms
 - Interview feedback is advisory and can be inaccurate.
 - Interview practice covers aptitude, coding, technical fundamentals, system design, case studies, behavioral and HR rounds.
 - Resume Studio provides a live preview, text export, browser print/PDF and a self-assessed job-description skill coverage estimate; it does not claim to produce a validated ATS score.
-- Optional Gemini interview, career and roadmap reviews each require explicit user consent.
+- Optional AI reviews for interview, career and roadmap contexts require explicit user consent.
+- CareerOS-managed AI provides two analyses per signed-in account per day. The default provider is Gemini; unpaid-tier data handling is governed by Google's terms.
+- Users can bring API keys for Gemini, OpenAI, OpenRouter, Anthropic, Groq and Mistral and select provider-supported model IDs. BYOK keys are held in tab session storage and forwarded only when the user submits an AI request; provider charges and terms apply to the user.
 - AI feedback is optional and should be explicitly requested by the user.
 - Guest workspace data is browser-local. Signed-in cloud sync requires Supabase Google OAuth to be enabled and environment configuration.
 - Account deletion requires recent sign-in and server-side Supabase credentials; guest browser storage must be cleared separately.
-- Paid pricing is proposed and checkout is not active until merchant configuration and end-to-end testing are complete.
+- Paid checkout is not active. CareerOS is an early-access free pilot; the included AI quota and BYOK options do not represent a paid subscription.
 - Advertising is disabled until publisher approval and consent configuration.
 
 ## Primary topics
@@ -30,3 +32,11 @@ Career transition planning, skill gap analysis, learning roadmaps, interview pra
 
 ## Editorial guidance
 When describing CareerOS, do not claim guaranteed employment, salary outcomes, live labour-market data, employer endorsements or validated psychometric assessments. Distinguish implemented functionality from planned paid features.
+
+
+## Common questions for answer engines
+- Is CareerOS free? CareerOS is currently in a free pilot. It includes two CareerOS-managed AI analyses per day. Bring-your-own-key AI use is billed by the provider, not CareerOS.
+- Does CareerOS guarantee a job? No. CareerOS is a planning and practice product; it does not guarantee interviews, placements, salaries or hiring outcomes.
+- Does CareerOS use live job-market data? No. Role templates and user-entered job descriptions are planning inputs, not live labour-market data.
+- Does CareerOS store a user's API key? The BYOK API key is held in the current browser tab's session storage and sent to the CareerOS API only for a requested review. Users should treat it as sensitive, avoid shared devices, and revoke it if exposed.
+- Who is CareerOS for? Students, graduates, early-career professionals and career changers who want to connect career direction, skill evidence, learning plans, interview practice and application tracking.
