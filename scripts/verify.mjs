@@ -61,6 +61,8 @@ if(Object.keys(content.roles).length<7) throw Error('Career-role templates are m
 const ids=[...appHtml.matchAll(/\bid="([^"]+)"/g)].map(x=>x[1]);
 if(new Set(ids).size!==ids.length) throw Error('Duplicate IDs in workspace HTML.');
 if(!appHtml.includes('workspace-redesign.css')) throw Error('Workspace UI stylesheet must be included.');
+if(!appHtml.includes('id="gettingStartedTitle"')||!appHtml.includes('class="start-steps"')||!appHtml.includes('data-jump="applications"'))
+  throw Error('Overview must include the beginner-friendly five-step career setup guide.');
 if(!appHtml.includes('data-tab="aiSettings"')||!appHtml.includes('id="aiSettings"')||!appHtml.includes('id="aiProvider"')||!appHtml.includes('id="aiApiKey"'))
   throw Error('AI settings must include provider, model and bring-your-own-key controls.');
 if(!appHtml.includes('href="#mainContent"') || !appHtml.includes('<main id="mainContent" tabindex="-1">') || !appHtml.includes('id="feedback" role="status" aria-live="polite"'))
