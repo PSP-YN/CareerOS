@@ -147,11 +147,11 @@ describe('API: /api/coach', () => {
       }
       return { ok: true };
     });
-    const hugeText = 'x'.repeat(10050);
+    const hugeText = { a: 'x'.repeat(4000), b: 'y'.repeat(4000), c: 'z'.repeat(3000) };
     const req = createMockReq({
       method: 'POST',
       headers: { authorization: 'Bearer good-token' },
-      body: { task: 'interview_feedback', context: { text: hugeText }, consent: true, freeTierDataAcknowledged: true }
+      body: { task: 'interview_feedback', context: hugeText, consent: true, freeTierDataAcknowledged: true }
     });
     const res = createMockRes();
     await coachHandler(req, res);
