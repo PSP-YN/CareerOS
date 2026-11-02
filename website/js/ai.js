@@ -41,7 +41,7 @@
 
     button.addEventListener('click', async () => {
       if (!consent.checked) {
-        feedback.textContent = 'Tick the consent box before sending this information to Gemini.';
+        feedback.textContent = 'Tick the consent box before sending this information to the selected AI provider.';
         return;
       }
       const original = button.textContent;
@@ -55,7 +55,13 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
           cache: 'no-store',
-          body: JSON.stringify({ task, context: getContext(), consent: true })
+          body: JSON.stringify({
+            task, context: getContext(), consent: true,
+            provider: window.CareerOSAISettings?.getProvider?.() || 'gemini',
+            model: window.CareerOSAISettings?.getModel?.() || 'gemini-3.8-flash',
+            apiKey: window.CareerOSAISettings?.getApiKey?.() || '',
+            freeTierDataAcknowledged: consent.checked
+          })
         });
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(payload.error || 'AI review is temporarily unavailable.');
@@ -74,7 +80,7 @@
     consentId: 'aiConsent',
     feedbackId: 'feedback',
     task: 'interview_feedback',
-    heading: 'Gemini interview feedback',
+    heading: 'AI interview feedback',
     getContext: () => ({
       role: document.getElementById('role')?.value.trim() || '',
       round: document.getElementById('qtype')?.value || 'behavioral',
@@ -88,7 +94,7 @@
     consentId: 'careerAiConsent',
     feedbackId: 'careerReviewFeedback',
     task: 'career_review',
-    heading: 'Gemini career direction review',
+    heading: 'AI career direction review',
     getContext: () => {
       const state = window.CareerOSState?.get?.() || {};
       return {
@@ -103,7 +109,7 @@
     consentId: 'roadmapAiConsent',
     feedbackId: 'roadmapReviewFeedback',
     task: 'roadmap_review',
-    heading: 'Gemini roadmap review',
+    heading: 'AI roadmap review',
     getContext: () => ({
       profile: window.CareerOSState?.get?.()?.profile || {},
       skills: window.CareerOSState?.get?.()?.skills || [],

@@ -4,10 +4,10 @@ import { spawnSync } from 'node:child_process';
 const required = [
   'website/index.html','website/app.html','website/admin.html','website/about.html',
   'website/career-pivot-guide.html','website/pricing.html','website/privacy.html','website/terms.html',
-  'website/assets/styles.css','website/assets/favicon.svg','website/assets/logo.svg',
+  'website/assets/styles.css','website/assets/workspace-redesign.css','website/assets/favicon.svg','website/assets/logo.svg',
   'website/assets/manifest.webmanifest','website/assets/admin.css',
   'website/js/app.js','website/js/auth.js','website/js/ai.js','website/js/admin.js',
-  'website/js/ads.js','website/js/interview-engine.js','website/js/decision-studio.js','website/data/career-content.js',
+  'website/js/ads.js','website/js/ai-settings.js','website/js/interview-engine.js','website/js/decision-studio.js','website/data/career-content.js',
   'website/data/extended-questions.js','website/data/full-scale-questions.js','api/coach.js','api/config.js','api/questions.js',
   'api/admin-questions.js','api/delete-account.js',
   'supabase/schema.sql','README.md','vercel.json'
@@ -60,6 +60,11 @@ if(Object.keys(content.roles).length<7) throw Error('Career-role templates are m
 
 const ids=[...appHtml.matchAll(/\bid="([^"]+)"/g)].map(x=>x[1]);
 if(new Set(ids).size!==ids.length) throw Error('Duplicate IDs in workspace HTML.');
+if(!appHtml.includes('workspace-redesign.css')) throw Error('Workspace UI stylesheet must be included.');
+if(!appHtml.includes('id="gettingStartedTitle"')||!appHtml.includes('class="start-steps"')||!appHtml.includes('data-jump="applications"'))
+  throw Error('Overview must include the beginner-friendly five-step career setup guide.');
+if(!appHtml.includes('data-tab="aiSettings"')||!appHtml.includes('id="aiSettings"')||!appHtml.includes('id="aiProvider"')||!appHtml.includes('id="aiApiKey"'))
+  throw Error('AI settings must include provider, model and bring-your-own-key controls.');
 if(!appHtml.includes('href="#mainContent"') || !appHtml.includes('<main id="mainContent" tabindex="-1">') || !appHtml.includes('id="feedback" role="status" aria-live="polite"'))
   throw Error('Workspace needs a skip link, main landmark and live interview feedback.');
 if(!readText('website/admin.html').includes('href="#adminMain"') || !readText('website/admin.html').includes('id="adminMain" tabindex="-1"'))
@@ -78,6 +83,10 @@ if(landing.indexOf('<section class="closing-cta">')>landing.indexOf('<footer cla
 for(const marker of ['rel="canonical"','application/ld+json','FAQPage','/assets/styles.css','/js/ads.js'])
   if(!landing.includes(marker)) throw Error('Landing page marker missing: '+marker);
 
+const ldScripts=[...landing.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)];
+if(ldScripts.length<2) throw Error('Homepage should include Organization/SoftwareApplication and FAQ structured data.');
+for(const block of ldScripts) JSON.parse(block[1]);
+if(!exists('website/llms.txt')||!exists('website/llms-full.txt')) throw Error('GEO crawler reference files are missing.');
 const manifest=JSON.parse(readText('website/assets/manifest.webmanifest'));
 if(!exists('website'+manifest.icons[0].src)) throw Error('PWA icon path is invalid.');
 const deployment=JSON.parse(readText('vercel.json'));

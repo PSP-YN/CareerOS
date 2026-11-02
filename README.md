@@ -63,6 +63,10 @@ Our goal is to make career development more structured, practical and accountabl
 **CareerOS — Decide with evidence. Prepare with purpose.**
 
 
-## Gemini data-processing requirement
+## AI usage and bring-your-own-key
 
-CareerOS sends candidate-specific context to Gemini only when `GEMINI_PAID_DATA_PROCESSING=true` is explicitly configured by the operator after confirming that the Google Cloud project has active billing. The server blocks Gemini requests by default. Do not enable this flag for an unpaid Gemini API project: Google's unpaid-service terms permit submitted prompts and responses to be used to improve Google products and allow human review, and instruct developers not to submit personal, sensitive, confidential or proprietary information. See the [Gemini API Additional Terms](https://ai.google.dev/gemini-api/terms).
+- The CareerOS-managed AI allowance is two analyses per signed-in user per day, subject to shared provider availability/quota.
+- The default shared model is Gemini 3.8 Flash. The unpaid Gemini API tier may use prompts/responses to improve Google products and may involve human review under Google's terms. The UI requires explicit per-review consent and warns users not to submit sensitive or confidential data.
+- After the included allowance, users can use their own Gemini, OpenAI, OpenRouter, Anthropic, Groq or Mistral API key and select a model ID.
+- BYOK keys are held in browser tab session storage and sent to the CareerOS API only when a review is submitted. The API forwards the key to the selected fixed provider endpoint; it does not store the key in Supabase or log it. Provider costs/terms apply to the user.
+- This BYOK proxy is a convenience, not a guarantee of secret isolation. Use scoped/restricted keys, avoid shared devices, and revoke exposed keys.

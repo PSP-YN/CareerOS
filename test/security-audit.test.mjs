@@ -86,11 +86,12 @@ describe('Security Audit: HTTP Security Headers (vercel.json)', () => {
     assert.ok(!/razorpay/i.test(csp), 'Razorpay origins must be removed after payment integration removal.');
   });
 
-  test('Gemini coach and live verifier use the supported Gemini 3.8 Flash model', () => {
+  test('AI coach has a supported Gemini 3.8 default and fixed provider endpoints', () => {
     const coach = readFileSync('api/coach.js', 'utf8');
-    const liveCheck = readFileSync('scripts/verify-live.mjs', 'utf8');
-    assert.ok(coach.includes('models/gemini-3.8-flash:generateContent'));
-    assert.ok(liveCheck.includes('models/gemini-3.8-flash:generateContent'));
+    assert.ok(coach.includes("defaultModel: 'gemini-3.8-flash'"));
+    assert.ok(coach.includes('generativelanguage.googleapis.com/v1beta/models'));
+    assert.ok(coach.includes('const dailyLimit = 2'));
+    assert.ok(coach.includes('PROVIDER_KEY_REJECTED'));
     assert.ok(!coach.includes('gemini-2.5-flash'));
   });
 
@@ -120,10 +121,12 @@ describe('Security Audit: Database RLS & Privileges (supabase/schema.sql)', () =
     assert.ok(schema.includes('revoke all on public.subscriptions from public, anon, authenticated;'));
   });
 
-  test('Gemini personal-context requests require a billing-backed project flag', () => {
+  test('hosted free AI requires explicit privacy acknowledgement and BYOK is supported', () => {
     const coach = readFileSync('api/coach.js', 'utf8');
-    assert.ok(coach.includes("GEMINI_PAID_DATA_PROCESSING !== 'true'"));
-    assert.ok(coach.includes('GEMINI_PAID_PROCESSING_REQUIRED'));
+    assert.ok(coach.includes('freeTierDataAcknowledged !== true'));
+    assert.ok(coach.includes('const dailyLimit = 2'));
+    assert.ok(coach.includes('const byok = !!userKey'));
+    assert.ok(coach.includes('if (!byok)'));
   });
 
   test('user_workspaces isolates records by auth.uid()', () => {
