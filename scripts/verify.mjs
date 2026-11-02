@@ -113,7 +113,8 @@ for(const marker of ['enable row level security','user_workspaces','interview_qu
 for(const marker of ['persistSession: true','autoRefreshToken: true','window.localStorage','syncWorkspace'])
   if(!auth.includes(marker))throw Error('Persistent auth/sync control missing: '+marker);
 for(const provider of ['gemini','openai','openrouter','anthropic','groq','mistral']) if(!coach.includes(provider)) throw Error('AI provider routing missing: '+provider);
-if(!coach.includes('const dailyLimit = 2')||!coach.includes('CAREEROS_FREE_LIMIT')||!coach.includes('PROVIDER_KEY_REJECTED')) throw Error('AI quota and BYOK provider error handling are missing.');\nif(!schema.includes('as $\ndeclare') || !schema.includes('\nend;\n$$;') || schema.includes('as $\ndeclare'))
+if(!coach.includes('const dailyLimit = 2')||!coach.includes('CAREEROS_FREE_LIMIT')||!coach.includes('PROVIDER_KEY_REJECTED')) throw Error('AI quota and BYOK provider error handling are missing.');
+if(!schema.includes('as $\ndeclare') || !schema.includes('\nend;\n$$;') || schema.includes('as $\ndeclare'))
   throw Error('Subscription SQL function must use a valid dollar-quoted body.');
 if(!app.includes('if(roleChanged){S.skills=[];P.splice(0,P.length);S.done=[];S.answers=[];S.sessions=0;'))
   throw Error('Changing the target role must reset role-specific assessments, milestones and interview history.');
