@@ -4,7 +4,7 @@ const PROVIDERS = {
   openai: { endpoint: 'https://api.openai.com/v1/chat/completions', defaultModel: 'gpt-5.4-mini', kind: 'openai' },
   openrouter: { endpoint: 'https://openrouter.ai/api/v1/chat/completions', defaultModel: 'openai/gpt-5.4-mini', kind: 'openai' },
   groq: { endpoint: 'https://api.groq.com/openai/v1/chat/completions', defaultModel: 'openai/gpt-oss-120b', kind: 'openai' },
-  mistral: { endpoint: 'https://api.mistral.ai/v1/chat/completions', defaultModel: 'mistral-small-latest', kind: 'openai' },
+  mistral: { endpoint: 'https://api.mistral.ai/v1/chat/completions', defaultModel: 'mistral-large-latest', kind: 'openai' },
   anthropic: { endpoint: 'https://api.anthropic.com/v1/messages', defaultModel: 'claude-sonnet-5-5', kind: 'anthropic' }
 };
 const MAX_CONTEXT_CHARS = 10000;
