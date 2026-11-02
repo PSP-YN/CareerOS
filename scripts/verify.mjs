@@ -23,7 +23,8 @@ const content=JSON.parse(contentMatch[1]);
 const extendedSource=readText('website/data/extended-questions.js');
 const extendedMatch=extendedSource.match(/window\.CareerOSQuestionBank\s*=\s*(\{[\s\S]*\});/);
 if(!extendedMatch) throw Error('Extended question bank is missing.');
-const extended=JSON.parse(extendedMatch[1].replace(/(^|\n)\s*([a-z_]+)\s*:/g,'$1"$2":'));
+const extended=JSON.parse(extendedMatch[1].replace(/(^|
+)\s*([a-z_]+)\s*:/g,'$1"$2":'));
 const fullScaleSource=readText('website/data/full-scale-questions.js');
 const fullScaleMatch=fullScaleSource.match(/window\.CareerOSFullScaleQuestions\s*=\s*(\{[\s\S]*?\});/);
 if(!fullScaleMatch) throw Error('Full-scale interview question bank is missing.');
@@ -114,7 +115,11 @@ for(const marker of ['persistSession: true','autoRefreshToken: true','window.loc
   if(!auth.includes(marker))throw Error('Persistent auth/sync control missing: '+marker);
 for(const provider of ['gemini','openai','openrouter','anthropic','groq','mistral']) if(!coach.includes(provider)) throw Error('AI provider routing missing: '+provider);
 if(!coach.includes('const dailyLimit = 2')||!coach.includes('CAREEROS_FREE_LIMIT')||!coach.includes('PROVIDER_KEY_REJECTED')) throw Error('AI quota and BYOK provider error handling are missing.');
-if(!schema.includes('as $\ndeclare') || !schema.includes('\nend;\n$$;') || schema.includes('as $\ndeclare'))
+if(!schema.includes('as $
+declare') || !schema.includes('
+end;
+$$;') || schema.includes('as $
+declare'))
   throw Error('Subscription SQL function must use a valid dollar-quoted body.');
 if(!app.includes('if(roleChanged){S.skills=[];P.splice(0,P.length);S.done=[];S.answers=[];S.sessions=0;'))
   throw Error('Changing the target role must reset role-specific assessments, milestones and interview history.');
