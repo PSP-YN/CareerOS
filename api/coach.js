@@ -5,10 +5,10 @@ function sanitizeForHostedFreeTier(value, key = '') {
   if (PRIVATE_FIELD.test(key)) return '[redacted]';
   if (typeof value === 'string') {
     return value
-      .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}/gi, '[email redacted]')
-      .replace(/(?:\\+?\\d[\\d\\s().-]{7,}\\d)/g, '[phone redacted]')
-      .replace(/https?:\\/\\/\\S+/gi, '[link redacted]')
-      .replace(/\\b\\d{8,}\\b/g, '[identifier redacted]')
+      .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[email redacted]')
+      .replace(/(?:\+?\d[\d\s().-]{7,}\d)/g, '[phone redacted]')
+      .replace(/https?:\/\/\S+/gi, '[link redacted]')
+      .replace(/\b\d{8,}\b/g, '[identifier redacted]')
       .slice(0, 4000);
   }
   if (Array.isArray(value)) return value.slice(0, 100).map(item => sanitizeForHostedFreeTier(item));
