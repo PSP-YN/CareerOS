@@ -136,3 +136,11 @@ if((schema.match(/set search_path = pg_catalog, public, pg_temp/g)||[]).length!=
 
 
 
+
+const aiSettings=readText('website/js/ai-settings.js'),aiClient=readText('website/js/ai.js');
+if(!coach.includes('body.ageConfirmed !== true') || !aiClient.includes('ageConfirmed: consent.checked'))
+  throw Error('AI review age attestation must be enforced by the API and sent by the client.');
+if(!aiSettings.includes('I confirm I am 18 or older'))
+  throw Error('AI provider consent must state the 18+ requirement.');
+if(!readText('.github/workflows/production-smoke.yml').includes('Skip smoke for superseded main commits'))
+  throw Error('Production smoke workflow must skip stale main commits.');
