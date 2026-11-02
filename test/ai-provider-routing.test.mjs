@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import handler from '../api/coach.js';
+import handler, { sanitizeHostedContext } from '../api/coach.js';
 
 const envKeys = ['SUPABASE_URL','SUPABASE_ANON_KEY','SUPABASE_SERVICE_ROLE_KEY','GEMINI_API_KEY'];
 const originalEnv = Object.fromEntries(envKeys.map(k => [k, process.env[k]]));
@@ -73,9 +73,25 @@ test('CareerOS free tier reserves two analyses per day and returns valid feedbac
     throw new Error('Unexpected request '+target);
   };
   t.after(()=>{global.fetch=originalFetch;for(const k of envKeys){if(originalEnv[k]===undefined)delete process.env[k];else process.env[k]=originalEnv[k];}});
-  const res=await call({task:'career_review',context:{role:'developer'},consent:true,provider:'gemini'});
+  const res=await call({task:'career_review',context:{role:'developer'},consent:true,provider:'gemini',freeTierDataAcknowledged:true});
   assert.equal(res.statusCode,200);
   assert.equal(quotaBody.p_daily_limit,2);
   assert.equal(res.body.quota.dailyLimit,2);
   assert.equal(res.body.result.summary,'Useful review');
+});
+
+test('hosted free tier requires data acknowledgement and sanitizes identifiers', async t => {
+  process.env.SUPABASE_URL='https://supabase.test';
+  process.env.SUPABASE_ANON_KEY='anon';
+  process.env.SUPABASE_SERVICE_ROLE_KEY='service';
+  process.env.GEMINI_API_KEY='platform-gemini';
+  global.fetch=async url => String(url).endsWith('/auth/v1/user') ? response(200,{id:'user-3'}) : response(200,true);
+  t.after(()=>{global.fetch=originalFetch;for(const k of envKeys){if(originalEnv[k]===undefined)delete process.env[k];else process.env[k]=originalEnv[k];}});
+  const missingAck=await call({task:'career_review',context:{role:'developer'},consent:true,provider:'gemini'});
+  assert.equal(missingAck.statusCode,400);
+  const safe=sanitizeHostedContext({profile:{role:'developer',email:'person@example.com',phone:'+91 98765 43210'},note:'Contact at user@example.org https://linkedin.com/in/name'});
+  assert.equal(safe.profile.email,'[redacted]');
+  assert.equal(safe.profile.phone,'[redacted]');
+  assert.ok(!JSON.stringify(safe).includes('example.com'));
+  assert.ok(!JSON.stringify(safe).includes('linkedin.com'));
 });
