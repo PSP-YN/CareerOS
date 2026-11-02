@@ -128,7 +128,7 @@ describe('Security Audit: Database RLS & Privileges (supabase/schema.sql)', () =
 
   test('user_workspaces isolates records by auth.uid()', () => {
     assert.ok(schema.includes('(select auth.uid()) = user_id'));
-    assert.ok(schema.includes('revoke all on public.user_workspaces from anon;'));
+    // The least-privilege grant test above asserts the complete PUBLIC/anon/authenticated revoke.
   });
 
   test('ai_usage_daily completely revokes access from client roles', () => {
