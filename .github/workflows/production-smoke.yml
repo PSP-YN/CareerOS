@@ -14,21 +14,26 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
     steps:
-      - name: Wait for Vercel production deployment to become available
+      - name: Wait for Vercel production deployment to match the tested commit
         shell: bash
+        env:
+          EXPECTED_COMMIT: ${{ github.event.workflow_run.head_sha || '' }}
         run: |
           set -euo pipefail
           base="https://careeros-intelligence.vercel.app"
           ready=0
           for attempt in $(seq 1 30); do
-            if curl --silent --show-error --fail --max-time 15 "$base/" >/dev/null; then
+            config=$(curl --silent --show-error --fail --max-time 15 "$base/api/config?release-check=$EXPECTED_COMMIT" || true)
+            actual=$(echo "$config" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{process.stdout.write(JSON.parse(s).gitCommit||'')}catch{}})")
+            if [ -n "$config" ] && { [ -z "$EXPECTED_COMMIT" ] || [ "$actual" = "$EXPECTED_COMMIT" ]; }; then
               ready=1
+              echo "Production commit: $actual"
               break
             fi
-            echo "Production not ready yet ($attempt/30); retrying in 10s"
+            echo "Production commit not updated yet ($attempt/30); expected $EXPECTED_COMMIT, got $actual; retrying in 10s"
             sleep 10
           done
-          test "$ready" = "1" || { echo "Production homepage did not become available"; exit 1; }
+          test "$ready" = "1" || { echo "Production deployment did not match the tested commit"; exit 1; }
       - name: Check public page routes
         shell: bash
         run: |
