@@ -87,7 +87,7 @@ test('hosted free tier requires data acknowledgement and sanitizes identifiers',
   process.env.GEMINI_API_KEY='platform-gemini';
   global.fetch=async url => String(url).endsWith('/auth/v1/user') ? response(200,{id:'user-3'}) : response(200,true);
   t.after(()=>{global.fetch=originalFetch;for(const k of envKeys){if(originalEnv[k]===undefined)delete process.env[k];else process.env[k]=originalEnv[k];}});
-  const missingAck=await call({task:'career_review',context:{role:'developer'},consent:true,provider:'gemini'});
+  const missingAck=await call({task:'career_review',context:{role:'developer'},consent:true,freeTierDataAcknowledged:true,provider:'gemini'});
   assert.equal(missingAck.statusCode,400);
   const safe=sanitizeHostedContext({profile:{role:'developer',email:'person@example.com',phone:'+91 98765 43210'},note:'Contact at user@example.org https://linkedin.com/in/name'});
   assert.equal(safe.profile.email,'[redacted]');
