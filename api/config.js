@@ -20,5 +20,6 @@ export default function handler(req, res) {
   const adsenseClientId = process.env.ADSENSE_CLIENT_ID || '';
   const adsenseHomeSlotId = process.env.ADSENSE_HOME_SLOT_ID || '';
   const adsenseGuideSlotId = process.env.ADSENSE_GUIDE_SLOT_ID || '';
-  return res.status(200).json({ supabaseUrl, supabaseAnonKey, billingEnabled, adsenseClientId, adsenseHomeSlotId, adsenseGuideSlotId });
+  const gitCommit = process.env.VERCEL_GIT_COMMIT_SHA || '';
+  return res.status(200).json({ supabaseUrl, supabaseAnonKey, billingEnabled, adsenseClientId, adsenseHomeSlotId, adsenseGuideSlotId, gitCommit });
 }
