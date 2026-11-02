@@ -120,10 +120,11 @@ describe('Security Audit: Database RLS & Privileges (supabase/schema.sql)', () =
     assert.ok(schema.includes('revoke all on public.subscriptions from public, anon, authenticated;'));
   });
 
-  test('Gemini personal-context requests require a billing-backed project flag', () => {
+  test('hosted Gemini coach is limited to two free pilot reviews per day', () => {
     const coach = readFileSync('api/coach.js', 'utf8');
-    assert.ok(coach.includes("GEMINI_PAID_DATA_PROCESSING !== 'true'"));
-    assert.ok(coach.includes('GEMINI_PAID_PROCESSING_REQUIRED'));
+    assert.ok(coach.includes('const dailyLimit = 2;'));
+    assert.ok(!coach.includes('GEMINI_PAID_DATA_PROCESSING'));
+    assert.ok(coach.includes('consume_careeros_ai_quota'));
   });
 
   test('user_workspaces isolates records by auth.uid()', () => {
