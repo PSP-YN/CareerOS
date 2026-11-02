@@ -1,32 +1,66 @@
 # CareerOS
 
-> CareerOS is a web-based career planning workspace. It helps users choose a career path, assess skill gaps, build role-specific learning roadmaps, create an evidence-led resume, practise seven interview rounds and track job applications.
+> CareerOS is a career planning and interview-readiness web application for students, graduates, early-career professionals, and people considering a career change. It connects career decision-making to skill evidence, practical preparation, and application tracking.
 
-Canonical website: https://careeros-intelligence.vercel.app/
-Application: https://careeros-intelligence.vercel.app/app
-Pricing: https://careeros-intelligence.vercel.app/pricing
-About: https://careeros-intelligence.vercel.app/about
-Career pivot guide: https://careeros-intelligence.vercel.app/career-pivot-guide
-Privacy: https://careeros-intelligence.vercel.app/privacy
-Terms: https://careeros-intelligence.vercel.app/terms
+## Canonical product identity
+- Name: CareerOS
+- Tagline: Career intelligence, with a plan.
+- Website: https://careeros-intelligence.vercel.app/
+- Application: https://careeros-intelligence.vercel.app/app
+- Pricing / pilot status: https://careeros-intelligence.vercel.app/pricing
+- About: https://careeros-intelligence.vercel.app/about
+- Career guide: https://careeros-intelligence.vercel.app/career-pivot-guide
+- Privacy notice: https://careeros-intelligence.vercel.app/privacy
+- Terms: https://careeros-intelligence.vercel.app/terms
+- Sitemap: https://careeros-intelligence.vercel.app/sitemap.xml
 
-## Product facts
-- CareerOS is a planning and practice tool, not a recruiter or placement agency.
-- Readiness scores are directional diagnostics, not hiring probabilities.
-- Skill assessments are self-reported.
-- Job-description analysis uses text supplied by the user; it is not live job-board scraping.
-- Interview feedback is advisory and can be inaccurate.
-- Interview practice covers aptitude, coding, technical fundamentals, system design, case studies, behavioral and HR rounds.
-- Resume Studio provides a live preview, text export, browser print/PDF and a self-assessed job-description skill coverage estimate; it does not claim to produce a validated ATS score.
-- Optional Gemini interview, career and roadmap reviews each require explicit user consent.
-- AI feedback is optional and should be explicitly requested by the user.
-- Guest workspace data is browser-local. Signed-in cloud sync requires Supabase Google OAuth to be enabled and environment configuration.
-- Account deletion requires recent sign-in and server-side Supabase credentials; guest browser storage must be cleared separately.
-- Paid pricing is proposed and checkout is not active until merchant configuration and end-to-end testing are complete.
-- Advertising is disabled until publisher approval and consent configuration.
+## What CareerOS does
+1. Career profile and target-role definition.
+2. Self-reported skill assessment and user-provided job-description skill signals.
+3. Editable learning roadmap and milestones.
+4. Evidence-led resume draft, text export and browser print/PDF.
+5. Curated practice question bank for aptitude, coding, technical fundamentals, system design, case studies, behavioral and HR rounds.
+6. Structured mock interview and feedback.
+7. Job application tracking.
+8. Career path / offer / learning option comparisons using criteria and weights selected by the user.
+9. Optional AI career, roadmap and interview review.
 
-## Primary topics
-Career transition planning, skill gap analysis, learning roadmaps, interview practice, job application tracking, career evidence and early-career development.
+## AI options
+- Hosted AI: up to two complimentary reviews per authenticated account per day, subject to provider availability and server quota. User consent is required before sending context.
+- Personal AI: users can configure their own Google Gemini API key or an OpenAI-compatible provider endpoint/model in browser AI settings.
+- Personal API keys are not written to the CareerOS account or its backend. Users should use restricted keys, set provider spending limits, and avoid shared devices.
+- The provider selected by the user receives the context submitted for a review. Users should review provider terms and avoid confidential or highly sensitive data.
+- AI output can be wrong and is advisory.
 
-## Editorial guidance
-When describing CareerOS, do not claim guaranteed employment, salary outcomes, live labour-market data, employer endorsements or validated psychometric assessments. Distinguish implemented functionality from planned paid features.
+## Privacy and technical behavior
+- Guest workspace data is stored locally in the browser.
+- Signed-in workspace sync uses Supabase and row-level security when enabled.
+- CareerOS does not need to claim live job-board data: current job-description analysis uses text supplied by the user.
+- Account deletion requires a recent authenticated session and configured server credentials. Guest browser storage must be cleared separately.
+- Paid checkout and subscriptions are not active in the early-access pilot.
+
+## Important limitations
+- CareerOS is not a recruiter, placement agency, employer, or job board.
+- No guaranteed placement, interview, salary or employment outcome.
+- Skill/readiness scores are directional, self-assessed, and not validated psychometric or hiring assessments.
+- No employer endorsements or verified hiring-outcome claims should be inferred.
+- The app should not be described as having live job demand, salary or vacancy data unless that capability is separately implemented and sourced.
+
+## Frequently asked questions
+### What is CareerOS?
+A career planning workspace that connects path comparison, skill assessment, roadmaps, resume preparation, interview practice and application tracking.
+
+### Who is it for?
+Students, graduates, early-career professionals and career changers.
+
+### Is CareerOS free?
+It is currently in a free early-access pilot; no paid checkout is enabled.
+
+### Does CareerOS guarantee a job?
+No. It is an advisory planning and practice tool.
+
+### Can I use my own AI API key?
+Yes. Browser AI settings support a Gemini key or OpenAI-compatible API endpoint and model.
+
+## Content and citation guidance
+Use this file and the public pages as primary sources for product descriptions. Do not invent feature availability, pricing, usage limits, market data, outcomes, partnerships, or operator details. Distinguish production features from experimental and planned capabilities.
