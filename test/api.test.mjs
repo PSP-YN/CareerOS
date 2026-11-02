@@ -151,7 +151,7 @@ describe('API: /api/coach', () => {
     const req = createMockReq({
       method: 'POST',
       headers: { authorization: 'Bearer good-token' },
-      body: { task: 'interview_feedback', context: { text: hugeText } }
+      body: { task: 'interview_feedback', context: { text: hugeText }, consent: true, freeTierDataAcknowledged: true }
     });
     const res = createMockRes();
     await coachHandler(req, res);
@@ -216,7 +216,7 @@ describe('API: /api/coach', () => {
     const res = createMockRes();
     await coachHandler(req, res);
     assert.equal(res.statusCode, 429);
-    assert.match(res.body.error, /limit reached/i);
+    assert.match(res.body.error, /two CareerOS AI analyses/i);
   });
 
   test('successfully strips markdown fences and returns structured advice', async () => {
