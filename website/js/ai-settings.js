@@ -3,7 +3,7 @@
     gemini: 'gemini-3.8-flash',
     openai: 'gpt-6-luna',
     openrouter: 'openai/gpt-6-luna',
-    anthropic: 'claude-sonnet-4-5',
+    anthropic: 'claude-sonnet-5-5',
     groq: 'openai/gpt-oss-120b',
     mistral: 'mistral-large-latest'
   };
