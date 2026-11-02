@@ -156,7 +156,7 @@ export default async function handler(req, res) {
     }
     let result;
     try { result = extractResult(data, provider); } catch { await releaseQuota(); return res.status(502).json({ code: 'INVALID_AI_RESPONSE', error: 'The model returned an unexpected response. Your CareerOS hosted analysis allowance has been restored; try again.' }); }
-    if (!result || typeof result !== 'object' || Array.isArray(result)) { await releaseQuota(); return res.status(502).json({ code: 'INVALID_AI_RESPONSE', error: 'The model returned an unexpected response. Your CareerOS hosted analysis allowance has been restored; try again.' }); }
+    if (!result || typeof result !== 'object' || Array.isArray(result) || typeof result.summary !== 'string' || !result.summary.trim() || !Array.isArray(result.next_actions) || !Array.isArray(result.caveats)) { await releaseQuota(); return res.status(502).json({ code: 'INVALID_AI_RESPONSE', error: 'The model returned an unexpected response. Your CareerOS hosted analysis allowance has been restored; try again.' }); }
     quotaUsageDate = null; // Commit the reservation only after a valid provider response is parsed.
     return res.status(200).json({
       result: {
