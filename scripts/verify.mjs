@@ -60,7 +60,9 @@ if(Object.keys(content.roles).length<7) throw Error('Career-role templates are m
 
 const ids=[...appHtml.matchAll(/\bid="([^"]+)"/g)].map(x=>x[1]);
 if(new Set(ids).size!==ids.length) throw Error('Duplicate IDs in workspace HTML.');
-if(!appHtml.includes('data-tab="aiSettings"')||!appHtml.includes('id="aiSettings"')||!appHtml.includes('id="aiProvider"')||!appHtml.includes('id="aiApiKey"'))\n  throw Error('AI settings must include provider, model and bring-your-own-key controls.');\nif(!appHtml.includes('href="#mainContent"') || !appHtml.includes('<main id="mainContent" tabindex="-1">') || !appHtml.includes('id="feedback" role="status" aria-live="polite"'))
+if(!appHtml.includes('data-tab="aiSettings"')||!appHtml.includes('id="aiSettings"')||!appHtml.includes('id="aiProvider"')||!appHtml.includes('id="aiApiKey"'))
+  throw Error('AI settings must include provider, model and bring-your-own-key controls.');
+if(!appHtml.includes('href="#mainContent"') || !appHtml.includes('<main id="mainContent" tabindex="-1">') || !appHtml.includes('id="feedback" role="status" aria-live="polite"'))
   throw Error('Workspace needs a skip link, main landmark and live interview feedback.');
 if(!readText('website/admin.html').includes('href="#adminMain"') || !readText('website/admin.html').includes('id="adminMain" tabindex="-1"'))
   throw Error('Admin page needs a keyboard-accessible skip link and main landmark.');
@@ -110,7 +112,8 @@ for(const marker of ['enable row level security','user_workspaces','interview_qu
   if(!schema.includes(marker))throw Error('Supabase schema missing '+marker);
 for(const marker of ['persistSession: true','autoRefreshToken: true','window.localStorage','syncWorkspace'])
   if(!auth.includes(marker))throw Error('Persistent auth/sync control missing: '+marker);
-for(const provider of ['gemini','openai','openrouter','anthropic','groq','mistral']) if(!coach.includes(provider)) throw Error('AI provider routing missing: '+provider);\nif(!coach.includes('const dailyLimit = 2')||!coach.includes('CAREEROS_FREE_LIMIT')||!coach.includes('PROVIDER_KEY_REJECTED')) throw Error('AI quota and BYOK provider error handling are missing.');\nif(!schema.includes('as $\ndeclare') || !schema.includes('\nend;\n$$;') || schema.includes('as $\ndeclare'))
+for(const provider of ['gemini','openai','openrouter','anthropic','groq','mistral']) if(!coach.includes(provider)) throw Error('AI provider routing missing: '+provider);
+if(!coach.includes('const dailyLimit = 2')||!coach.includes('CAREEROS_FREE_LIMIT')||!coach.includes('PROVIDER_KEY_REJECTED')) throw Error('AI quota and BYOK provider error handling are missing.');\nif(!schema.includes('as $\ndeclare') || !schema.includes('\nend;\n$$;') || schema.includes('as $\ndeclare'))
   throw Error('Subscription SQL function must use a valid dollar-quoted body.');
 if(!app.includes('if(roleChanged){S.skills=[];P.splice(0,P.length);S.done=[];S.answers=[];S.sessions=0;'))
   throw Error('Changing the target role must reset role-specific assessments, milestones and interview history.');
