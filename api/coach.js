@@ -73,9 +73,11 @@ export default async function handler(req, res) {
   const body = req.body && typeof req.body === 'object' ? req.body : {};
   const { task, context } = body;
   if (!ALLOWED.has(task) || !context || typeof context !== 'object' || Array.isArray(context)) return res.status(400).json({ error: 'Invalid task or context.' });
-  let serialized;
+  let rawSerialized, serialized;
+  try { rawSerialized = JSON.stringify(context); } catch { return res.status(400).json({ error: 'Context must be valid JSON data.' }); }
+  if (rawSerialized.length > MAX_CONTEXT_CHARS) return res.status(413).json({ error: 'Context is too large. Shorten the supplied text.' });
   try { serialized = JSON.stringify(sanitizeHostedContext(context)); } catch { return res.status(400).json({ error: 'Context must be valid JSON data.' }); }
-  if (serialized.length > MAX_CONTEXT_CHARS) return res.status(413).json({ error: 'Context is too large. Shorten the supplied text.' });
+  if (serialized.length > MAX_CONTEXT_CHARS) return res.status(413).json({ error: 'Context is too large after privacy filtering.' });
   if (body.consent !== true) return res.status(400).json({ error: 'Explicit consent is required before sending your information to an AI provider.' });
 
   const providerId = typeof body.provider === 'string' ? body.provider : 'gemini';
