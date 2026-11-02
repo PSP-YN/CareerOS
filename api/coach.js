@@ -9,13 +9,15 @@ const PROVIDERS = {
 };
 const MAX_CONTEXT_CHARS = 10000;
 const MAX_KEY_CHARS = 500;
-const PRIVATE_FIELD = /(?:full.?name|first.?name|last.?name|email|phone|mobile|address|linkedin|github|portfolio|website|resume|contact|date.?of.?birth|dob|aadhaar|passport|national.?id)/i;
+const PRIVATE_FIELD = /(?:full.?name|first.?name|last.?name|email|phone|mobile|address|linkedin|github|portfolio|website|resume|contact|date.?of.?birth|dob|aadhaar|passport|national.?id|api.?key|access.?token|refresh.?token|password|secret|credential)/i;
 export function sanitizeHostedContext(value, key = '') {
   if (PRIVATE_FIELD.test(key)) return '[redacted]';
   if (typeof value === 'string') return value
     .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[email redacted]')
     .replace(/(?:\+?\d[\d\s().-]{7,}\d)/g, '[phone redacted]')
     .replace(/https?:\/\/\S+/gi, '[link redacted]')
+        .replace(/\b(?:sk-[A-Za-z0-9]{20,}|AIza[A-Za-z0-9_-]{20,}|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|xox[baprs]-[A-Za-z0-9-]{20,})\b/g, '[credential redacted]')
+    .replace(/\bBearer\s+[A-Za-z0-9._-]{20,}/gi, '[credential redacted]')
     .replace(/\b\d{8,}\b/g, '[identifier redacted]')
     .slice(0, 4000);
   if (Array.isArray(value)) return value.slice(0, 100).map(item => sanitizeHostedContext(item));
