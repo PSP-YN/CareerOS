@@ -1,10 +1,10 @@
 (() => {
   const PROVIDERS = {
     gemini: 'gemini-3.8-flash',
-    openai: 'gpt-4.1-mini',
-    openrouter: 'openai/gpt-4.1-mini',
-    anthropic: 'claude-3-7-sonnet-latest',
-    groq: 'llama-3.3-70b-versatile',
+    openai: 'gpt-5.4-mini',
+    openrouter: 'openai/gpt-5.4-mini',
+    anthropic: 'claude-sonnet-5-5',
+    groq: 'openai/gpt-oss-120b',
     mistral: 'mistral-small-latest'
   };
   const $ = id => document.getElementById(id);
