@@ -59,7 +59,8 @@
             task, context: getContext(), consent: true,
             provider: window.CareerOSAISettings?.getProvider?.() || 'gemini',
             model: window.CareerOSAISettings?.getModel?.() || 'gemini-3.8-flash',
-            apiKey: window.CareerOSAISettings?.getApiKey?.() || ''
+            apiKey: window.CareerOSAISettings?.getApiKey?.() || '',
+            freeTierDataAcknowledged: !(window.CareerOSAISettings?.getApiKey?.())
           })
         });
         const payload = await response.json().catch(() => ({}));
