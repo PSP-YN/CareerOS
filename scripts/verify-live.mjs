@@ -120,7 +120,7 @@ if (!supabaseUrl) {
       method: 'POST',
       headers: { ...headers, 'Content-Type': 'application/json' },
       // Null user_id is rejected before any insert, while still proving the RPC exists and executes.
-      body: JSON.stringify({ p_user_id: null, p_daily_limit: 10 })
+      body: JSON.stringify({ p_user_id: null, p_daily_limit: 2 })
     });
     const quotaResult = await rpcQuota.json().catch(() => null);
     if (rpcQuota.ok && quotaResult === false) {
