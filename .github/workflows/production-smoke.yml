@@ -1,0 +1,55 @@
+name: Production smoke test
+on:
+  workflow_run:
+    workflows: ["Verify CareerOS"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for Vercel production deployment to become available
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://careeros-intelligence.vercel.app"
+          ready=0
+          for attempt in $(seq 1 30); do
+            if curl --silent --show-error --fail --max-time 15 "$base/" >/dev/null; then
+              ready=1
+              break
+            fi
+            echo "Production not ready yet ($attempt/30); retrying in 10s"
+            sleep 10
+          done
+          test "$ready" = "1" || { echo "Production homepage did not become available"; exit 1; }
+      - name: Check public page routes
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://careeros-intelligence.vercel.app"
+          for path in / /about /pricing /career-pivot-guide /app; do
+            code=$(curl --silent --show-error --output /dev/null --write-out "%{http_code}" --max-time 20 "$base$path")
+            echo "$path -> $code"
+            test "$code" = "200"
+          done
+      - name: Check API route contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://careeros-intelligence.vercel.app"
+          config=$(curl --silent --show-error --fail --max-time 20 "$base/api/config")
+          echo "$config" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const c=JSON.parse(s);if(!c.supabaseUrl||!c.supabaseAnonKey)process.exit(1);console.log('Public config is valid')})"
+          questions=$(curl --silent --show-error --fail --max-time 20 "$base/api/questions")
+          echo "$questions" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const q=JSON.parse(s);if(!Array.isArray(q.questions))process.exit(1);console.log('Questions endpoint contract is valid')})"
+          admin=$(curl --silent --show-error --output /dev/null --write-out "%{http_code}" --max-time 20 "$base/api/admin-questions")
+          test "$admin" = "401"
+          coach=$(curl --silent --show-error --output /dev/null --write-out "%{http_code}" --max-time 20 "$base/api/coach")
+          test "$coach" = "405"
+          echo "Protected API methods respond as expected"
