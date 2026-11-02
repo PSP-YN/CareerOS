@@ -108,7 +108,7 @@ for(const page of ['website/index.html','website/app.html','website/admin.html',
     if(!exists('website'+url)) throw Error('Broken static asset '+url+' referenced by '+page);
 }
 
-const jsFiles=[...staticFiles.filter(x=>x.endsWith('.js')),...['api/coach.js','api/config.js','api/questions.js','api/admin-questions.js','api/delete-account.js']];
+const jsFiles=[...staticFiles.filter(x=>x.endsWith('.js')),...['api/coach.js','api/lib/ai-quota.js','api/config.js','api/questions.js','api/admin-questions.js','api/delete-account.js']];
 for(const file of jsFiles){const result=spawnSync(process.execPath,['--check',file],{encoding:'utf8'});if(result.status!==0)throw Error(file+': '+result.stderr);}
 const schema=readText('supabase/schema.sql'),auth=readText('website/js/auth.js'),coach=readText('api/coach.js'),admin=readText('api/admin-questions.js');
 if(!schema.includes('revoke all on public.subscriptions from public, anon, authenticated;'))
