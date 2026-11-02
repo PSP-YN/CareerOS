@@ -1,3 +1,5 @@
+import { reserveHostedQuota, releaseHostedQuota } from './lib/ai-quota.js';
+
 const ALLOWED = new Set(['interview_feedback', 'career_review', 'roadmap_review']);
 const PROVIDERS = {
   gemini: { endpoint: model => `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, defaultModel: 'gemini-3.8-flash', kind: 'gemini' },
@@ -98,17 +100,27 @@ export default async function handler(req, res) {
   if (!apiKey) return res.status(503).json({ error: 'CareerOS AI is not configured. You can add your own provider API key in AI settings.' });
 
   const dailyLimit = 2;
+  let quotaUsageDate = null;
   if (!byok) {
     try {
-      const quota = await fetch(supabaseUrl + '/rest/v1/rpc/consume_careeros_ai_quota', {
-        method: 'POST',
-        headers: { apikey: serviceKey, Authorization: 'Bearer ' + serviceKey, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ p_user_id: user.id, p_daily_limit: dailyLimit })
-      });
-      if (!quota.ok) return res.status(503).json({ error: 'AI quota is not configured. Apply the supplied Supabase migration.' });
-      if (await quota.json() !== true) return res.status(429).json({ code: 'CAREEROS_FREE_LIMIT', error: 'You have used your two CareerOS AI analyses for today. Add your own API key in AI settings to continue; provider usage and billing will be yours.' });
-    } catch { return res.status(503).json({ error: 'AI usage quota could not be checked.' }); }
+      quotaUsageDate = await reserveHostedQuota({ supabaseUrl, serviceKey, userId: user.id });
+      if (!quotaUsageDate) return res.status(429).json({ code: 'CAREEROS_FREE_LIMIT', error: 'You have used your two CareerOS AI analyses for today. Your hosted allowance resets at 00:00 UTC (05:30 IST). Add your own API key in AI settings to continue; provider usage and billing will be yours.' });
+    } catch (error) {
+      console.error('[CareerOS AI] quota reservation failed', { message: String(error?.message || error).slice(0, 180) });
+      return res.status(503).json({ code: 'AI_QUOTA_UNAVAILABLE', error: 'CareerOS could not reserve your daily AI allowance. No analysis was started; please retry shortly.' });
+    }
   }
+  const releaseQuota = async () => {
+    if (byok || !quotaUsageDate) return;
+    const usageDate = quotaUsageDate;
+    quotaUsageDate = null;
+    try {
+      const released = await releaseHostedQuota({ supabaseUrl, serviceKey, userId: user.id, usageDate });
+      if (!released) console.error('[CareerOS AI] quota reservation release was not confirmed', { usageDate });
+    } catch (error) {
+      console.error('[CareerOS AI] quota reservation release failed', { usageDate, message: String(error?.message || error).slice(0, 180) });
+    }
+  };
 
   const prompt = buildPrompt(task, serialized);
   const requestBody = provider.kind === 'gemini'
@@ -134,15 +146,18 @@ export default async function handler(req, res) {
     if (!upstream.ok) {
       const status = upstream.status;
       const msg = String(data?.error?.message || data?.error?.type || '').slice(0, 250);
-      if (status === 401 || status === 403) return res.status(502).json({ code: 'PROVIDER_KEY_REJECTED', error: byok ? 'The provider rejected your API key. Verify the key and account access.' : 'CareerOS provider key was rejected.' });
-      if (status === 404) return res.status(502).json({ code: 'PROVIDER_MODEL_UNAVAILABLE', error: 'This model is not available for the selected provider or key.' });
-      if (status === 429) return res.status(503).json({ code: 'PROVIDER_LIMIT', error: 'Provider rate limit or quota reached. Check your provider dashboard or wait before retrying.' });
+      if (status === 401 || status === 403) { await releaseQuota(); return res.status(502).json({ code: 'PROVIDER_KEY_REJECTED', error: byok ? 'The provider rejected your API key. Verify the key and account access.' : 'CareerOS provider key was rejected.' }); }
+      if (status === 404) { await releaseQuota(); return res.status(502).json({ code: 'PROVIDER_MODEL_UNAVAILABLE', error: 'This model is not available for the selected provider or key.' }); }
+      if (status === 429) { await releaseQuota(); return res.status(429).json({ code: 'PROVIDER_LIMIT', error: 'The AI provider rate limit or quota was reached. Your CareerOS hosted analysis allowance has been restored; check the provider dashboard or wait before retrying.' }); }
       console.error('[CareerOS AI] provider failure', { provider: providerId, status, message: msg });
-      return res.status(502).json({ code: 'PROVIDER_ERROR', error: 'The AI provider returned an error. Check provider/model settings and try again.' });
+      await releaseQuota();
+      if (status === 503) return res.status(503).json({ code: 'PROVIDER_OVERLOADED', error: 'The AI provider is temporarily unavailable. Your CareerOS hosted analysis allowance has been restored; try again shortly.' });
+      return res.status(502).json({ code: 'PROVIDER_ERROR', error: 'The AI provider returned an error. Your CareerOS hosted analysis allowance has been restored; check provider/model settings and try again.' });
     }
     let result;
-    try { result = extractResult(data, provider); } catch { return res.status(502).json({ code: 'INVALID_AI_RESPONSE', error: 'The model returned an unexpected response. Try again.' }); }
-    if (!result || typeof result !== 'object' || Array.isArray(result)) return res.status(502).json({ code: 'INVALID_AI_RESPONSE', error: 'The model returned an unexpected response. Try again.' });
+    try { result = extractResult(data, provider); } catch { await releaseQuota(); return res.status(502).json({ code: 'INVALID_AI_RESPONSE', error: 'The model returned an unexpected response. Your CareerOS hosted analysis allowance has been restored; try again.' }); }
+    if (!result || typeof result !== 'object' || Array.isArray(result) || typeof result.summary !== 'string' || !result.summary.trim() || !Array.isArray(result.next_actions) || !Array.isArray(result.caveats)) { await releaseQuota(); return res.status(502).json({ code: 'INVALID_AI_RESPONSE', error: 'The model returned an unexpected response. Your CareerOS hosted analysis allowance has been restored; try again.' }); }
+    quotaUsageDate = null; // Commit the reservation only after a valid provider response is parsed.
     return res.status(200).json({
       result: {
         summary: typeof result.summary === 'string' ? result.summary.slice(0, 1800) : '',
@@ -154,6 +169,7 @@ export default async function handler(req, res) {
       quota: byok ? { mode: 'byok', dailyLimit: null } : { mode: 'careeros-free', dailyLimit }
     });
   } catch {
-    return res.status(502).json({ error: 'AI service timed out or is unavailable. Try again later.' });
+    await releaseQuota();
+    return res.status(502).json({ code: 'AI_SERVICE_UNAVAILABLE', error: 'AI service timed out or is unavailable. Your CareerOS hosted analysis allowance has been restored; try again later.' });
   }
 }

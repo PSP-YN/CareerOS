@@ -8,7 +8,7 @@ const required = [
   'website/assets/manifest.webmanifest','website/assets/admin.css',
   'website/js/app.js','website/js/auth.js','website/js/ai.js','website/js/admin.js',
   'website/js/ads.js','website/js/ai-settings.js','website/js/interview-engine.js','website/js/decision-studio.js','website/data/career-content.js',
-  'website/data/extended-questions.js','website/data/full-scale-questions.js','api/coach.js','api/config.js','api/questions.js',
+  'website/data/extended-questions.js','website/data/full-scale-questions.js','api/coach.js','api/lib/ai-quota.js','api/config.js','api/questions.js',
   'api/admin-questions.js','api/delete-account.js',
   'supabase/schema.sql','README.md','vercel.json'
 ];
@@ -108,14 +108,14 @@ for(const page of ['website/index.html','website/app.html','website/admin.html',
     if(!exists('website'+url)) throw Error('Broken static asset '+url+' referenced by '+page);
 }
 
-const jsFiles=[...staticFiles.filter(x=>x.endsWith('.js')),...['api/coach.js','api/config.js','api/questions.js','api/admin-questions.js','api/delete-account.js']];
+const jsFiles=[...staticFiles.filter(x=>x.endsWith('.js')),...['api/coach.js','api/lib/ai-quota.js','api/config.js','api/questions.js','api/admin-questions.js','api/delete-account.js']];
 for(const file of jsFiles){const result=spawnSync(process.execPath,['--check',file],{encoding:'utf8'});if(result.status!==0)throw Error(file+': '+result.stderr);}
 const schema=readText('supabase/schema.sql'),auth=readText('website/js/auth.js'),coach=readText('api/coach.js'),admin=readText('api/admin-questions.js');
 if(!schema.includes('revoke all on public.subscriptions from public, anon, authenticated;'))
   throw Error('Client roles must not have direct subscription table privileges.');
 if(!schema.includes('revoke all on public.user_workspaces from public, anon, authenticated;')||!schema.includes('grant select, insert, update on public.user_workspaces to authenticated;'))
   throw Error('Workspace table grants must follow least privilege.');
-for(const marker of ['enable row level security','user_workspaces','interview_questions','consume_careeros_ai_quota','service_role'])
+for(const marker of ['enable row level security','user_workspaces','interview_questions','consume_careeros_ai_quota','reserve_careeros_ai_quota','release_careeros_ai_quota','service_role'])
   if(!schema.includes(marker))throw Error('Supabase schema missing '+marker);
 for(const marker of ['persistSession: true','autoRefreshToken: true','window.localStorage','syncWorkspace'])
   if(!auth.includes(marker))throw Error('Persistent auth/sync control missing: '+marker);
@@ -131,7 +131,7 @@ if(app.includes("push([item.question,item.rubric])}loadq()})"))
   throw Error('Late custom-question responses must not clear an in-progress interview answer.');
 if(auth.includes("storageKey: 'careeros-auth-v1'") || readText('website/js/admin.js').includes("storageKey:'careeros-auth-v1'"))
   throw Error('Use the existing Supabase auth storage key to preserve returning sessions.');
-if((schema.match(/set search_path = pg_catalog, public, pg_temp/g)||[]).length!==2)
+if((schema.match(/set search_path = pg_catalog, public, pg_temp/g)||[]).length!==4)
   throw Error('SECURITY DEFINER functions must pin pg_temp last in search_path.');
 
 
@@ -144,3 +144,11 @@ if(!aiSettings.includes('I confirm I am 18 or older'))
   throw Error('AI provider consent must state the 18+ requirement.');
 if(!readText('.github/workflows/production-smoke.yml').includes('Skip smoke for superseded main commits'))
   throw Error('Production smoke workflow must skip stale main commits.');
+
+const quotaHelper=readText('api/lib/ai-quota.js');
+if(!coach.includes('reserveHostedQuota')||!coach.includes('releaseHostedQuota')||!coach.includes('quotaUsageDate = null; // Commit the reservation only after a valid provider response is parsed.'))
+  throw Error('Hosted AI quota must be reserved atomically and committed only after a valid provider response.');
+for(const marker of ['reserve_careeros_ai_quota','release_careeros_ai_quota','p_daily_limit: 2'])
+  if(!quotaHelper.includes(marker)) throw Error('Hosted AI quota helper missing '+marker);
+if(!coach.includes('CAREEROS_FREE_LIMIT')||!coach.includes('dailyLimit = 2'))
+  throw Error('The two-analysis hosted free-tier limit must remain enforced.');

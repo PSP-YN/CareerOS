@@ -56,7 +56,7 @@ test('BYOK provider request does not consume CareerOS daily quota and never retu
   assert.ok(!JSON.stringify(res.body).includes('user-secret-key'));
   assert.equal(calls.length,2,'only auth and provider calls should happen');
   assert.equal(calls[1].headers.Authorization,'Bearer user-secret-key');
-  assert.ok(!calls.some(c=>c.url.includes('/rpc/consume_careeros_ai_quota')));
+  assert.ok(!calls.some(c=>c.url.includes('/rpc/reserve_careeros_ai_quota')));
 });
 
 test('CareerOS free tier reserves two analyses per day and returns valid feedback', async t => {
@@ -68,7 +68,7 @@ test('CareerOS free tier reserves two analyses per day and returns valid feedbac
   global.fetch=async (url,options={}) => {
     const target=String(url);
     if(target.endsWith('/auth/v1/user')) return response(200,{id:'user-2'});
-    if(target.endsWith('/rpc/consume_careeros_ai_quota')) {quotaBody=JSON.parse(options.body);return response(200,true);}
+    if(target.endsWith('/rpc/reserve_careeros_ai_quota')) {quotaBody=JSON.parse(options.body);return response(200,'2026-11-02');}
     if(target.includes('generativelanguage.googleapis.com')) return response(200,{candidates:[{content:{parts:[{text:JSON.stringify({summary:'Useful review',next_actions:['Practice'],caveats:[]})}]}}]});
     throw new Error('Unexpected request '+target);
   };

@@ -115,18 +115,17 @@ if (!supabaseUrl) {
       }
     }
 
-    // Check Stored Procedures (RPC)
-    const rpcQuota = await fetch(supabaseUrl + '/rest/v1/rpc/consume_careeros_ai_quota', {
+    // Check quota reservation RPC without consuming a real user's allowance.
+    const reserveQuota = await fetch(supabaseUrl + '/rest/v1/rpc/reserve_careeros_ai_quota', {
       method: 'POST',
       headers: { ...headers, 'Content-Type': 'application/json' },
-      // Null user_id is rejected before any insert, while still proving the RPC exists and executes.
-      body: JSON.stringify({ p_user_id: null, p_daily_limit: 10 })
+      body: JSON.stringify({ p_user_id: null, p_daily_limit: 2 })
     });
-    const quotaResult = await rpcQuota.json().catch(() => null);
-    if (rpcQuota.ok && quotaResult === false) {
-      console.log('   [PASS] Stored procedure "consume_careeros_ai_quota" exists and rejects an invalid user safely.');
+    const reserveResult = await reserveQuota.json().catch(() => 'invalid');
+    if (reserveQuota.ok && reserveResult === null) {
+      console.log('   [PASS] Hosted AI quota reservation RPC exists and safely rejects a null user.');
     } else {
-      console.log(`   [FAIL] Stored procedure "consume_careeros_ai_quota" check failed (HTTP ${rpcQuota.status}). Run supabase/schema.sql migration.`);
+      console.log(`   [FAIL] Hosted AI quota reservation RPC check failed (HTTP ${reserveQuota.status}). Apply the refundable AI quota migration.`);
       allPassed = false;
     }
 
