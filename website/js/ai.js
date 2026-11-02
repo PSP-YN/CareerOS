@@ -13,12 +13,15 @@
     } catch { prefs = { ...DEFAULTS }; }
   }
   function savePrefs() {
-    const key = prefs.remember ? STORE_KEY : SESSION_KEY;
     try {
       localStorage.removeItem(STORE_KEY);
       sessionStorage.removeItem(SESSION_KEY);
-      sessionStorage.setItem(key === STORE_KEY ? SESSION_KEY : key, JSON.stringify(prefs));
-      if (prefs.remember) localStorage.setItem(STORE_KEY, JSON.stringify(prefs));
+      if (prefs.remember) {
+        localStorage.setItem(STORE_KEY, JSON.stringify(prefs));
+      } else {
+        const { key: _apiKey, ...browserSettings } = prefs;
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify(browserSettings));
+      }
     } catch {}
   }
   function escapeText(value) { return String(value ?? ''); }
@@ -33,7 +36,7 @@
     panel.setAttribute('aria-labelledby', 'aiSettingsTitle');
     panel.innerHTML = `
       <div class="ai-settings-head"><div><span class="eyebrow">PERSONAL AI CONTROL</span><h2 id="aiSettingsTitle">Choose how AI reviews work</h2></div><button class="btn" type="button" id="aiSettingsClose" aria-label="Close AI settings">Close</button></div>
-      <p class="small">CareerOS offers two complimentary hosted reviews per account per day. After that, connect your own model API key. AI is optional.</p>
+      <p class="small">CareerOS offers two hosted reviews per account per day. The free Gemini tier may use prompts and responses to improve Google products and may involve human review. Do not submit personal, sensitive, confidential or employer-proprietary information through hosted AI. For personal context, choose your own provider and check its data terms.</p>
       <label class="ai-setting-label" for="aiMode">AI mode</label>
       <select id="aiMode"><option value="hosted">CareerOS free reviews (2/day)</option><option value="byok">Use my own API key / model</option></select>
       <div id="byokSettings" hidden>
@@ -43,7 +46,7 @@
         <div id="aiEndpointWrap"><label class="ai-setting-label" for="aiEndpoint">Chat completions endpoint (OpenAI-compatible)</label><input id="aiEndpoint" type="url" autocomplete="off" placeholder="https://api.openai.com/v1/chat/completions"></div>
         <label class="ai-setting-label" for="aiKey">API key</label><input id="aiKey" type="password" autocomplete="new-password" placeholder="Paste your provider API key">
         <label class="ai-setting-check"><input id="aiRemember" type="checkbox"> Remember key on this browser (not recommended on shared devices)</label>
-        <p class="small warning">Your own key is sent directly from this browser to the provider endpoint you configure. CareerOS does not send it to its backend or store it in your CareerOS account. Browser storage is not a secure vault; use a restricted key with spending limits and clear it after use.</p>
+        <p class="small warning">Your own key is sent directly from this browser to the provider endpoint you configure. CareerOS does not send it to its backend or store it in your CareerOS account. By default the key is kept only for the current browser session; checking “Remember” stores it in local browser storage. Browser storage is not a secure vault; use a restricted key with spending limits and clear it after use. Some providers block browser CORS requests; use a CORS-enabled endpoint or a local server configured for CORS.</p>
         <button class="btn" type="button" id="aiSaveKey">Save AI settings</button><button class="btn" type="button" id="aiClearKey">Clear saved key</button>
       </div>
       <div class="ai-settings-foot"><span id="aiSettingsStatus" role="status" aria-live="polite">Hosted AI is available after sign-in.</span><a href="https://ai.google.dev/gemini-api/docs/api-key" target="_blank" rel="noopener noreferrer">Get a Gemini API key ↗</a></div>`;
