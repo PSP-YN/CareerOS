@@ -176,14 +176,13 @@ describe('API: /api/coach', () => {
     assert.match(res.body.error, /explicit consent/i);
   });
 
-  test('blocks Gemini requests unless billing-backed data processing is explicitly enabled', async () => {
-    delete process.env.GEMINI_PAID_DATA_PROCESSING;
+  test('requires a separate hosted free-tier data acknowledgement', async () => {
     let quotaCalled = false;
-    let geminiCalled = false;
+    let providerCalled = false;
     restoreFetch = mockFetch(async url => {
       if (url.includes('/auth/v1/user')) return { ok: true, json: async () => ({ id: 'usr-123' }) };
       if (url.includes('/rpc/consume_careeros_ai_quota')) quotaCalled = true;
-      if (url.includes('generativelanguage.googleapis.com')) geminiCalled = true;
+      if (url.includes('generativelanguage.googleapis.com')) providerCalled = true;
       return { ok: true, json: async () => true };
     });
     const req = createMockReq({
@@ -193,10 +192,10 @@ describe('API: /api/coach', () => {
     });
     const res = createMockRes();
     await coachHandler(req, res);
-    assert.equal(res.statusCode, 503);
-    assert.equal(res.body.code, 'GEMINI_PAID_PROCESSING_REQUIRED');
+    assert.equal(res.statusCode, 400);
+    assert.match(res.body.error, /free AI tier/i);
     assert.equal(quotaCalled, false);
-    assert.equal(geminiCalled, false);
+    assert.equal(providerCalled, false);
   });
 
   test('returns 429 when daily quota is exhausted', async () => {
@@ -212,7 +211,7 @@ describe('API: /api/coach', () => {
     const req = createMockReq({
       method: 'POST',
       headers: { authorization: 'Bearer good-token' },
-      body: { task: 'interview_feedback', context: { answer: 'valid answer' }, consent: true }
+      body: { task: 'interview_feedback', context: { answer: 'valid answer' }, consent: true, freeTierDataAcknowledged: true }
     });
     const res = createMockRes();
     await coachHandler(req, res);
@@ -255,7 +254,7 @@ describe('API: /api/coach', () => {
     const req = createMockReq({
       method: 'POST',
       headers: { authorization: 'Bearer good-token' },
-      body: { task: 'interview_feedback', context: { answer: 'I used a hash map to achieve O(N) complexity.' }, consent: true }
+      body: { task: 'interview_feedback', context: { answer: 'I used a hash map to achieve O(N) complexity.' }, consent: true, freeTierDataAcknowledged: true }
     });
     const res = createMockRes();
     await coachHandler(req, res);
@@ -263,7 +262,7 @@ describe('API: /api/coach', () => {
     assert.equal(res.body.result.summary, 'Solid technical answer');
     assert.deepEqual(res.body.result.next_actions, ['Add performance metric']);
     assert.deepEqual(res.body.result.caveats, ['Advisory only']);
-    assert.equal(res.body.quota.dailyLimit, 10);
+    assert.equal(res.body.quota.dailyLimit, 2);
   });
 });
 
