@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createMockReq, createMockRes, mockFetch } from './helpers.mjs';
 
 import configHandler from '../api/config.js';
-import coachHandler from '../api/coach.js';
+import coachHandler, { sanitizeHostedContext } from '../api/coach.js';
 import deleteAccountHandler from '../api/delete-account.js';
 import questionsHandler from '../api/questions.js';
 import adminQuestionsHandler from '../api/admin-questions.js';
@@ -80,6 +80,17 @@ describe('API: /api/config', () => {
     assert.equal(res.statusCode, 200);
     assert.equal(res.body.billingEnabled, false);
   });;
+});
+
+test('hosted AI context redacts API keys, tokens and private fields', () => {
+  const sanitized = sanitizeHostedContext({
+    profile: { email: 'someone@example.com', apiKey: 'secret-key', role: 'Student developer' },
+    notes: 'Key: sk-123456789012345678901234 and Bearer abcdefghijklmnopqrstuvwxyz123456'
+  });
+  assert.equal(sanitized.profile.email, '[redacted]');
+  assert.equal(sanitized.profile.apiKey, '[redacted]');
+  assert.ok(!JSON.stringify(sanitized).includes('sk-123456789012345678901234'));
+  assert.ok(!JSON.stringify(sanitized).includes('abcdefghijklmnopqrstuvwxyz123456'));
 });
 
 describe('API: /api/coach', () => {
