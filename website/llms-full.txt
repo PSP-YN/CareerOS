@@ -28,7 +28,7 @@ Students, graduates, early-career job seekers, and career changers who need a st
 - Optional AI career direction, roadmap and interview feedback.
 
 ## AI options and data handling
-- CareerOS hosted AI provides two Gemini reviews per authenticated account per day. This is a daily per-account limit, not a guarantee of provider availability.
+- CareerOS hosted AI provides two Gemini reviews per authenticated account per day. AI reviews are restricted to users aged 18 or older. This is a daily per-account limit, not a guarantee of provider availability.
 - The hosted service uses Google's unpaid Gemini API tier. Google may use submitted content and responses to improve products and may have human reviewers process them. The app redacts common email, phone, URL and long-number identifiers, but that is not complete anonymization.
 - Users must remove personal, sensitive, confidential and proprietary information before using hosted free AI. Do not submit resumes containing personal contact details, government IDs, confidential employer information, credentials or private stories.
 - Bring-your-own-key supports Google Gemini, OpenAI, OpenRouter, Anthropic, Groq and Mistral. Users can select a provider-supported model identifier.
