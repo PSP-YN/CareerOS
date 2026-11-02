@@ -19,8 +19,9 @@ Terms: https://careeros-intelligence.vercel.app/terms
 - Interview practice covers aptitude, coding, technical fundamentals, system design, case studies, behavioral and HR rounds.
 - Resume Studio provides a live preview, text export, browser print/PDF and a self-assessed job-description skill coverage estimate; it does not claim to produce a validated ATS score.
 - Optional AI reviews for interview, career and roadmap contexts require explicit user consent.
-- CareerOS-managed AI provides two analyses per signed-in account per day. The default provider is Gemini; unpaid-tier data handling is governed by Google's terms.
-- Users can bring API keys for Gemini, OpenAI, OpenRouter, Anthropic, Groq and Mistral and select provider-supported model IDs. BYOK keys are held in tab session storage and forwarded only when the user submits an AI request; provider charges and terms apply to the user.
+- CareerOS-managed AI provides two analyses per signed-in account per day using Google's unpaid Gemini API tier.
+- Google may use unpaid-tier prompts/responses to improve products and may involve human reviewers. Users must not send personal, sensitive, confidential or proprietary information to hosted free AI. Direct identifier redaction is best-effort, not guaranteed anonymization.
+- Users can bring API keys for Gemini, OpenAI, OpenRouter, Anthropic, Groq and Mistral and select provider-supported model IDs. BYOK keys are held in tab session storage and forwarded through the CareerOS API only when the user submits a review; keys are not persisted to the account database. Provider charges and terms apply to the user.
 - AI feedback is optional and should be explicitly requested by the user.
 - Guest workspace data is browser-local. Signed-in cloud sync requires Supabase Google OAuth to be enabled and environment configuration.
 - Account deletion requires recent sign-in and server-side Supabase credentials; guest browser storage must be cleared separately.
