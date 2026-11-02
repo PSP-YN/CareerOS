@@ -1,7 +1,7 @@
 const ALLOWED = new Set(['interview_feedback', 'career_review', 'roadmap_review']);
 const MAX_CONTEXT_CHARS = 10000;
 const PRIVATE_FIELD = /(?:full.?name|first.?name|last.?name|email|phone|mobile|address|linkedin|github|portfolio|website|resume|contact|date.?of.?birth|dob|aadhaar|passport|national.?id)/i;
-function sanitizeForHostedFreeTier(value, key = '') {
+export function sanitizeForHostedFreeTier(value, key = '') {
   if (PRIVATE_FIELD.test(key)) return '[redacted]';
   if (typeof value === 'string') {
     return value
