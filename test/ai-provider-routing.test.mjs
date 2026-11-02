@@ -48,7 +48,7 @@ test('BYOK provider request does not consume CareerOS daily quota and never retu
     throw new Error('Unexpected external request: '+url);
   };
   t.after(()=>{global.fetch=originalFetch;for(const k of envKeys){if(originalEnv[k]===undefined)delete process.env[k];else process.env[k]=originalEnv[k];}});
-  const res=await call({task:'career_review',context:{role:'developer'},consent:true,provider:'openai',model:'gpt-4o-mini',apiKey:'user-secret-key'});
+  const res=await call({task:'career_review',context:{role:'developer'},consent:true,ageConfirmed:true,provider:'openai',model:'gpt-4o-mini',apiKey:'user-secret-key'});
   assert.equal(res.statusCode,200);
   assert.equal(res.body.provider,'openai');
   assert.equal(res.body.model,'gpt-4o-mini');
@@ -73,7 +73,7 @@ test('CareerOS free tier reserves two analyses per day and returns valid feedbac
     throw new Error('Unexpected request '+target);
   };
   t.after(()=>{global.fetch=originalFetch;for(const k of envKeys){if(originalEnv[k]===undefined)delete process.env[k];else process.env[k]=originalEnv[k];}});
-  const res=await call({task:'career_review',context:{role:'developer'},consent:true,provider:'gemini',freeTierDataAcknowledged:true});
+  const res=await call({task:'career_review',context:{role:'developer'},consent:true,ageConfirmed:true,provider:'gemini',freeTierDataAcknowledged:true});
   assert.equal(res.statusCode,200);
   assert.equal(quotaBody.p_daily_limit,2);
   assert.equal(res.body.quota.dailyLimit,2);
@@ -87,7 +87,7 @@ test('hosted free tier requires data acknowledgement and sanitizes identifiers',
   process.env.GEMINI_API_KEY='platform-gemini';
   global.fetch=async url => String(url).endsWith('/auth/v1/user') ? response(200,{id:'user-3'}) : response(200,true);
   t.after(()=>{global.fetch=originalFetch;for(const k of envKeys){if(originalEnv[k]===undefined)delete process.env[k];else process.env[k]=originalEnv[k];}});
-  const missingAck=await call({task:'career_review',context:{role:'developer'},consent:true,freeTierDataAcknowledged:false,provider:'gemini'});
+  const missingAck=await call({task:'career_review',context:{role:'developer'},consent:true,ageConfirmed:true,freeTierDataAcknowledged:false,provider:'gemini'});
   assert.equal(missingAck.statusCode,400);
   const safe=sanitizeHostedContext({profile:{role:'developer',email:'person@example.com',phone:'+91 98765 43210'},note:'Contact at user@example.org https://linkedin.com/in/name'});
   assert.equal(safe.profile.email,'[redacted]');

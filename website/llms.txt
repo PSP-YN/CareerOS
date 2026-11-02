@@ -18,8 +18,8 @@ Terms: https://careeros-intelligence.vercel.app/terms
 - Interview feedback is advisory and can be inaccurate.
 - Interview practice covers aptitude, coding, technical fundamentals, system design, case studies, behavioral and HR rounds.
 - Resume Studio provides a live preview, text export, browser print/PDF and a self-assessed job-description skill coverage estimate; it does not claim to produce a validated ATS score.
-- Optional AI reviews for interview, career and roadmap contexts require explicit user consent.
-- CareerOS-managed AI provides two analyses per signed-in account per day using Google's unpaid Gemini API tier.
+- Optional AI reviews for interview, career and roadmap contexts require explicit consent and are restricted to users aged 18 or older.
+- CareerOS-managed AI provides two analyses per signed-in account per day using Google's unpaid Gemini API tier. AI reviews are restricted to users aged 18 or older.
 - Google may use unpaid-tier prompts/responses to improve products and may involve human reviewers. Users must not send personal, sensitive, confidential or proprietary information to hosted free AI. Direct identifier redaction is best-effort, not guaranteed anonymization.
 - Users can bring API keys for Gemini, OpenAI, OpenRouter, Anthropic, Groq and Mistral and select provider-supported model IDs. BYOK keys are held in tab session storage and forwarded through the CareerOS API only when the user submits a review; keys are not persisted to the account database. Provider charges and terms apply to the user.
 - AI feedback is optional and should be explicitly requested by the user.

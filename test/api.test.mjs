@@ -174,7 +174,7 @@ describe('API: /api/coach', () => {
     const req = createMockReq({
       method: 'POST',
       headers: { authorization: 'Bearer good-token' },
-      body: { task: 'interview_feedback', context: hugeText, consent: true, freeTierDataAcknowledged: true }
+      body: { task: 'interview_feedback', context: hugeText, consent: true, freeTierDataAcknowledged: true, ageConfirmed: true }
     });
     const res = createMockRes();
     await coachHandler(req, res);
@@ -199,6 +199,25 @@ describe('API: /api/coach', () => {
     assert.match(res.body.error, /explicit consent/i);
   });
 
+  test('requires 18+ confirmation before consuming hosted AI quota', async () => {
+    let quotaCalled = false;
+    restoreFetch = mockFetch(async url => {
+      if (url.includes('/auth/v1/user')) return { ok: true, json: async () => ({ id: 'usr-123' }) };
+      if (url.includes('/rpc/consume_careeros_ai_quota')) quotaCalled = true;
+      return { ok: true, json: async () => true };
+    });
+    const req = createMockReq({
+      method: 'POST',
+      headers: { authorization: 'Bearer good-token' },
+      body: { task: 'career_review', context: { role: 'student developer' }, consent: true, freeTierDataAcknowledged: true, ageConfirmed: false }
+    });
+    const res = createMockRes();
+    await coachHandler(req, res);
+    assert.equal(res.statusCode, 400);
+    assert.match(res.body.error, /18 or older/i);
+    assert.equal(quotaCalled, false);
+  });
+
   test('requires a separate hosted free-tier data acknowledgement', async () => {
     let quotaCalled = false;
     let providerCalled = false;
@@ -211,7 +230,7 @@ describe('API: /api/coach', () => {
     const req = createMockReq({
       method: 'POST',
       headers: { authorization: 'Bearer good-token' },
-      body: { task: 'interview_feedback', context: { answer: 'A sufficiently detailed practice answer.' }, consent: true }
+      body: { task: 'interview_feedback', context: { answer: 'A sufficiently detailed practice answer.' }, consent: true, ageConfirmed: true }
     });
     const res = createMockRes();
     await coachHandler(req, res);
@@ -234,7 +253,7 @@ describe('API: /api/coach', () => {
     const req = createMockReq({
       method: 'POST',
       headers: { authorization: 'Bearer good-token' },
-      body: { task: 'interview_feedback', context: { answer: 'valid answer' }, consent: true, freeTierDataAcknowledged: true }
+      body: { task: 'interview_feedback', context: { answer: 'valid answer' }, consent: true, freeTierDataAcknowledged: true, ageConfirmed: true }
     });
     const res = createMockRes();
     await coachHandler(req, res);
@@ -277,7 +296,7 @@ describe('API: /api/coach', () => {
     const req = createMockReq({
       method: 'POST',
       headers: { authorization: 'Bearer good-token' },
-      body: { task: 'interview_feedback', context: { answer: 'I used a hash map to achieve O(N) complexity.' }, consent: true, freeTierDataAcknowledged: true }
+      body: { task: 'interview_feedback', context: { answer: 'I used a hash map to achieve O(N) complexity.' }, consent: true, freeTierDataAcknowledged: true, ageConfirmed: true }
     });
     const res = createMockRes();
     await coachHandler(req, res);

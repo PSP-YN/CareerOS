@@ -91,6 +91,7 @@ export default async function handler(req, res) {
   const userKey = typeof body.apiKey === 'string' ? body.apiKey.trim() : '';
   if (userKey.length > MAX_KEY_CHARS || /[\r\n]/.test(userKey)) return res.status(400).json({ error: 'Invalid API key format.' });
   const byok = !!userKey;
+  if (body.ageConfirmed !== true) return res.status(400).json({ error: 'Confirm that you are 18 or older before using AI reviews.' });
   if (!byok && body.freeTierDataAcknowledged !== true) return res.status(400).json({ error: 'Confirm that you removed personal, sensitive, confidential and proprietary details before using the hosted free AI tier.' });
   if (!byok && providerId !== 'gemini') return res.status(400).json({ error: 'Choose “Use my API key” before selecting a non-CareerOS provider.' });
   const apiKey = byok ? userKey : process.env.GEMINI_API_KEY;
