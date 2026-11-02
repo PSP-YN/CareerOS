@@ -19,6 +19,20 @@
   model.value = storage.getItem('careeros.ai.model') || PROVIDERS[provider.value] || PROVIDERS.gemini;
   key.value = storage.getItem('careeros.ai.key') || '';
   status.textContent = key.value ? 'Personal provider key is available in this browser tab.' : 'No personal API key configured. CareerOS free AI is selected.';
+  function updateConsentText() {
+    const byok = !!storage.getItem('careeros.ai.key');
+    const copy = byok
+      ? 'I consent to send the selected context to my chosen AI provider using my own API key. Provider data handling, quotas and costs apply.'
+      : 'I confirm I removed personal, sensitive, confidential and proprietary details. I consent to send this generalized context to CareerOS hosted Gemini. Google may use unpaid-tier prompts/responses to improve products and human reviewers may process them.';
+    ['careerAiConsent','roadmapAiConsent','aiConsent'].forEach(id => {
+      const checkbox = $(id);
+      const label = checkbox?.closest('label');
+      if (!label) return;
+      [...label.childNodes].filter(node => node.nodeType === Node.TEXT_NODE).forEach(node => node.remove());
+      label.append(document.createTextNode(' ' + copy));
+    });
+  }
+  updateConsentText();
 
   provider.addEventListener('change', () => {
     const saved = storage.getItem('careeros.ai.model');
@@ -40,6 +54,7 @@
     storage.setItem('careeros.ai.model', model.value.trim());
     storage.setItem('careeros.ai.key', key.value.trim());
     status.textContent = 'Personal API key saved for this browser tab only. CareerOS does not store it in your account.';
+    updateConsentText();
   });
   $('clearAiSettings')?.addEventListener('click', () => {
     storage.removeItem('careeros.ai.provider');
@@ -49,6 +64,7 @@
     provider.value = 'gemini';
     model.value = PROVIDERS.gemini;
     status.textContent = 'Personal API key removed from this tab.';
+    updateConsentText();
   });
 
   window.CareerOSAISettings = {
