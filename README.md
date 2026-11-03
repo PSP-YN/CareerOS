@@ -70,3 +70,13 @@ Our goal is to make career development more structured, practical and accountabl
 - After the included allowance, users can use their own Gemini, OpenAI, OpenRouter, Anthropic, Groq or Mistral API key and select a model ID.
 - BYOK keys are held in browser tab session storage and sent to the CareerOS API only when a review is submitted. The API forwards the key to the selected fixed provider endpoint; it does not store the key in Supabase or log it. Provider costs/terms apply to the user.
 - This BYOK proxy is a convenience, not a guarantee of secret isolation. Use scoped/restricted keys, avoid shared devices, and revoke exposed keys.
+
+
+## Project documentation
+
+- [Contributing](CONTRIBUTING.md)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+- [Security policy](SECURITY.md)
+- [Changelog](CHANGELOG.md)
+- [License](LICENSE)
+- [Project documentation](docs/)
