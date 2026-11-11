@@ -50,6 +50,22 @@ The workflow `.github/workflows/supabase-deploy.yml` is manual-only and requires
 
 Use a GitHub Environment named `production` with required reviewers before enabling this workflow for a production database. Do not put service-role keys or provider secrets in this workflow; it only applies SQL migrations.
 
+## Vercel application environment
+
+The Supabase project restores the database schema; the CareerOS API routes and frontend are deployed separately to Vercel. Configure the following in the Vercel project after creating the new Supabase project:
+
+| Variable | Where used | Handling |
+|---|---|---|
+| `SUPABASE_URL` | Frontend config and server API routes | Public project URL; validate HTTPS and project host |
+| `SUPABASE_ANON_KEY` or `SUPABASE_PUBLISHABLE_KEY` | Browser client and server-side user-token validation | Public key only; RLS remains mandatory |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server-side API routes for privileged operations | Secret; never expose through browser config or `NEXT_PUBLIC_*` |
+| `GEMINI_API_KEY` | Managed AI provider | Secret; keep server-side |
+| `GEMINI_PAID_DATA_PROCESSING` | Live integration safety gate | Keep `false` until paid-tier status and Google data terms are verified; set `true` only after that review |
+| `ADSENSE_CLIENT_ID`, `ADSENSE_HOME_SLOT_ID`, `ADSENSE_GUIDE_SLOT_ID` | Optional ads | Leave empty unless the publisher account and consent requirements are ready |
+| `RAZORPAY_*` | Payment integration placeholders | Leave unset while `billingEnabled=false`; do not enable payment collection until checkout, webhook signature verification, idempotency, refunds, tax and legal review are complete |
+
+Use the checked-in `.env.example` as a variable-name reference only. Never copy real credentials into Git, build output, client-side code or issue comments.
+
 ## Application runtime secrets
 
 Configure these in the Vercel project, not in Git:
