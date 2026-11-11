@@ -15,7 +15,7 @@ npm install
 npx supabase --version
 npx supabase login
 npx supabase link --project-ref YOUR_PROJECT_REF
-npx supabase db push
+npx supabase db push --yes --remote
 ```
 
 The CLI prompts for the database password when required. For a fresh project, migrations under `supabase/migrations/` create the schema. Do not run `schema.sql` as well; it is retained as a readable schema snapshot for review and manual recovery, not as a second migration path.
