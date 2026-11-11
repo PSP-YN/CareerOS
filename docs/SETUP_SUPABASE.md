@@ -1,50 +1,91 @@
-# Supabase and Google sign-in setup
+# Supabase setup and redeployment
 
-## 1. Run the database migration
-Open the Supabase project CareerOS → SQL Editor → New query. Paste and run [schema.sql](../supabase/schema.sql).
+CareerOS can be redeployed to a **new Supabase project** without depending on the retired project reference. Keep the GitHub repository; the hosted Supabase project is replaceable infrastructure.
 
-This creates one private workspace row per authenticated user. Row Level Security is enabled; users can only read or write rows whose user_id equals auth.uid(). The anon role receives no table access.
+## 1. Create a Supabase project
 
-## 2. Add Vercel environment variables
-Vercel → CareerOS project → Settings → Environment Variables. Add these for Production, Preview, and Development as appropriate:
+Create a project in the required organization and region. Record its project reference, database password, Project URL, and publishable key. The project reference is not a secret; database passwords and secret keys are.
 
-| Name | Value | Visibility |
+## 2. Apply version-controlled migrations
+
+The canonical deployment path is Supabase CLI:
+
+```bash
+npm install
+npx supabase --version
+npx supabase login
+npx supabase link --project-ref YOUR_PROJECT_REF
+npx supabase db push
+```
+
+The CLI prompts for the database password when required. For a fresh project, migrations under `supabase/migrations/` create the schema. Do not run `schema.sql` as well; it is retained as a readable schema snapshot for review and manual recovery, not as a second migration path.
+
+For a local clean-room check:
+
+```bash
+npx supabase start
+npx supabase db reset
+npx supabase stop
+```
+
+Use a current Supabase CLI and Docker-compatible local environment. Verify the CLI's current flags with `npx supabase db push --help` before running in a changed CLI version.
+
+## 3. Configure application environment variables
+
+Set the following in Vercel for Production, Preview, and Development as appropriate:
+
+| Variable | Purpose | Exposure |
 |---|---|---|
-| SUPABASE_URL | Project URL from Supabase → Project Settings → API | Plain configuration |
-| SUPABASE_ANON_KEY | Publishable/anon key from Supabase → Project Settings → API | Public key (anon/publishable only) |
-| SUPABASE_SERVICE_ROLE_KEY | Supabase service_role key from Project Settings → API; server-only | Sensitive |
-| GEMINI_API_KEY | Your Gemini API key from Google AI Studio | Sensitive |
+| `SUPABASE_URL` | New project's HTTPS API URL | Public configuration |
+| `SUPABASE_ANON_KEY` or `SUPABASE_PUBLISHABLE_KEY` | Browser-safe publishable key | Public configuration |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server-side privileged operations only | Secret |
+| `GEMINI_API_KEY` | Optional server-side Gemini coaching | Secret |
 
-Do not use the Supabase service_role key in the browser or expose it as SUPABASE_ANON_KEY. This app only needs the anon/publishable key in the browser; RLS enforces access.
+Never put a service-role or secret key in browser code, client bundles, a `NEXT_PUBLIC_*` variable, Git, logs, or issue reports. Rotate any key that was exposed.
 
-After adding variables, redeploy the Vercel project.
+After configuring the new project URL and publishable key, redeploy the Vercel project.
 
-## 3. Enable Google provider in Supabase
-Supabase → Authentication → Sign In / Providers → Google → Enable.
-Create a Google OAuth Web application in Google Cloud Console. Google OAuth credentials are separate from `GEMINI_API_KEY` and Supabase service-role credentials.
+## 4. Configure authentication providers
 
-In Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client ID:
-- Authorized JavaScript origin: https://careeros-intelligence.vercel.app
-- Authorized redirect URI: https://wjjfnmpkjmaakgnsvxaz.supabase.co/auth/v1/callback.
+In Supabase Authentication:
 
-Paste the Google Client ID and Client Secret into Supabase → Authentication → Sign In / Providers → Google, enable Google, and save. Do not put the Google Client Secret in Vercel or browser code.
+- Set the Site URL to `https://careeros-intelligence.vercel.app`.
+- Add `https://careeros-intelligence.vercel.app/**` and `http://localhost:4173/**` as redirect URLs.
+- If enabling Google sign-in, configure the Google OAuth Web Client ID and Client Secret in Supabase only.
+- Use the new project's callback URL: `https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback`.
+- Configure the matching authorised redirect URI in Google Cloud Console.
 
-## 4. Set Supabase URL configuration
-Supabase → Authentication → URL Configuration:
-- Site URL: https://careeros-intelligence.vercel.app
-- Additional Redirect URLs:
-  - https://careeros-intelligence.vercel.app/app
-  - https://careeros-intelligence.vercel.app/**
-  - http://localhost:4173/**
-  - Add a Vercel preview wildcard only if you actively test OAuth on preview deployments.
+Do not reuse the old project's callback URL.
 
-The Google OAuth callback is the Supabase callback URL, not the Vercel domain. The app's post-login redirect is /app.
+## 5. Optional CI deployment
 
-## 5. Verify
-Open https://careeros-intelligence.vercel.app/app, click Continue with Google, complete consent, and verify the account email appears in the header. Create a skill or milestone, reload, and verify cloud sync persists it. Test with two separate Google accounts to confirm data isolation.
+The manual GitHub Actions workflow `.github/workflows/supabase-deploy.yml` deploys committed migrations to the project reference supplied through GitHub Actions secrets. Configure these repository secrets:
 
-## Current implementation notes
-- Guest mode remains available and stores data in this browser.
-- Signed-in workspaces are synced to public.user_workspaces.
-- The app uses the Supabase anon/publishable key with RLS; never put service_role credentials in Vercel browser-visible configuration.
-- Existing local browser data is uploaded for a new account when no remote workspace exists. An existing remote workspace takes precedence after sign-in.
+- `SUPABASE_ACCESS_TOKEN`
+- `SUPABASE_PROJECT_REF`
+- `SUPABASE_DB_PASSWORD`
+
+Run it manually only after reviewing the migration diff and selecting the intended target. Use a protected GitHub Environment named `production` with required reviewers for production deployments. Do not place service-role keys in this workflow; migrations use the Supabase CLI and database password.
+
+## 6. Verify after redeployment
+
+1. Confirm all migrations are applied in Supabase.
+2. Run Supabase Security and Performance Advisors and resolve relevant findings.
+3. Verify RLS is enabled for every exposed table and anonymous access is denied.
+4. Sign in with two separate test accounts; verify each account can read/write only its own workspace.
+5. Verify AI quota reservation is atomic, server-only, and cannot be bypassed from the client.
+6. Verify interview question administration is server-mediated and unauthenticated requests are rejected.
+7. Verify Google sign-in, logout, expired sessions, refresh, and redirect allowlists.
+8. Verify Vercel production configuration exposes only the publishable key and never a service-role key.
+9. Run the production smoke workflow after Vercel is deployed.
+
+## Data and account recovery
+
+Migrations recreate the database schema and database-side functions; they do **not** restore user accounts, workspace records, OAuth provider credentials, secrets, billing provider state, uploaded objects, or historical analytics. Export/restore those separately before retiring an existing project if they must be retained. A redeployed empty database is not a recovery of old customer data.
+
+## Current product boundaries
+
+- Guest mode remains available and stores data in the current browser.
+- Signed-in workspaces sync to `public.user_workspaces`.
+- Gemini coaching is optional and server-side.
+- Payment checkout is disabled in the current free pilot. Do not configure Razorpay until pricing, tax, refund, cancellation, webhook, and consumer disclosures have been reviewed.
