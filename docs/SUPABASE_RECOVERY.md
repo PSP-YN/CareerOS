@@ -9,6 +9,20 @@ This repository is the source of truth for CareerOS application code and databas
 - `supabase/config.toml`: local Supabase CLI configuration, with no secrets.
 - `.env.example`: names of application environment variables only; never put real values here.
 
+## Validate the repository before redeployment
+
+Run the same clean-room validation used by GitHub Actions:
+
+```bash
+npm run check
+supabase start
+supabase db reset
+supabase migration list
+supabase stop --no-backup
+```
+
+The workflow `.github/workflows/supabase-validate.yml` runs application checks and rebuilds a fresh local Supabase database from all checked-in migrations. It requires Docker and does not connect to or modify a hosted project.
+
 ## Recreate a fresh Supabase project
 
 1. Create a new project in the required region and securely save its database password.
