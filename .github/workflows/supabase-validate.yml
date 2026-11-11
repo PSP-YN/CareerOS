@@ -1,0 +1,43 @@
+name: CareerOS Supabase schema validation
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: careeros-supabase-validation-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run application verification and unit tests
+        run: npm run check
+
+      - name: Install pinned Supabase CLI
+        uses: supabase/setup-cli@v3
+        with:
+          version: 3.1.0
+
+      - name: Start local Supabase stack
+        run: supabase start
+
+      - name: Rebuild database from the checked-in migration chain
+        run: supabase db reset
+
+      - name: Stop local Supabase stack
+        if: always()
+        run: supabase stop --no-backup
