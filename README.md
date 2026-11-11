@@ -47,6 +47,10 @@ CareerOS is currently in a free early-access pilot. No payment checkout is enabl
 - [Startup launch and fundraising plan](docs/STARTUP_LAUNCH_AND_FUNDRAISING.md)
 - [Automated QA and security report](QA_SECURITY_AUDIT_REPORT.md)
 
+## Database recovery and redeployment
+
+The Supabase schema is version-controlled and can be recreated on a fresh project. See [Supabase recovery and redeployment](docs/SUPABASE_RECOVERY.md) for the CLI setup, migration deployment, required secrets, and platform settings that must be reconfigured. The checked-in migrations—not a deleted hosted project—are the database deployment source of truth.
+
 ## Explore the platform
 
 - [Product overview](https://careeros-intelligence.vercel.app/)
