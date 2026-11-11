@@ -16,6 +16,6 @@ enabled = true
 enabled = true
 site_url = "https://careeros-intelligence.vercel.app"
 additional_redirect_urls = [
-  "https://careeros-intelligence.vercel.app/**",
-  "http://localhost:4173/**"
+  "https://careeros-intelligence.vercel.app/app",
+  "http://localhost:4173/app"
 ]
