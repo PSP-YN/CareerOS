@@ -1,0 +1,68 @@
+name: Deploy CareerOS Supabase schema
+
+on:
+  workflow_dispatch:
+    inputs:
+      project_ref:
+        description: Supabase project reference to deploy to
+        required: true
+        type: string
+      confirm_project_ref:
+        description: Re-enter the exact project reference to authorize schema deployment
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-deploy-${{ inputs.project_ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: ${{ inputs.project_ref != '' && inputs.project_ref == inputs.confirm_project_ref }}
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v3
+        with:
+          version: latest
+
+      - name: Validate required credentials and target
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_PROJECT_REF: ${{ inputs.project_ref }}
+          CONFIRM_PROJECT_REF: ${{ inputs.confirm_project_ref }}
+        run: |
+          set -euo pipefail
+          test -n "$SUPABASE_ACCESS_TOKEN" || { echo "Missing SUPABASE_ACCESS_TOKEN secret"; exit 1; }
+          test -n "$SUPABASE_DB_PASSWORD" || { echo "Missing SUPABASE_DB_PASSWORD secret"; exit 1; }
+          [[ "$SUPABASE_PROJECT_REF" =~ ^[a-z0-9]{20}$ ]] || { echo "Invalid Supabase project reference"; exit 1; }
+          test "$SUPABASE_PROJECT_REF" = "$CONFIRM_PROJECT_REF" || { echo "Project confirmation does not match"; exit 1; }
+          echo "Target project reference validated."
+
+      - name: Preview pending migrations
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_PROJECT_REF: ${{ inputs.project_ref }}
+        run: supabase db push --dry-run --remote="$SUPABASE_PROJECT_REF"
+
+      - name: Apply database migrations
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_PROJECT_REF: ${{ inputs.project_ref }}
+        run: supabase db push --yes --remote="$SUPABASE_PROJECT_REF"
