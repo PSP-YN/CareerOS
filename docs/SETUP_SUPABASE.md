@@ -1,5 +1,35 @@
 # Supabase and Google sign-in setup
 
+## Rebuild or redeploy the database from Git
+
+The repository now contains a complete baseline migration plus subsequent migrations under `supabase/migrations/`. Treat those migrations as the deployment source of truth; `supabase/schema.sql` remains a readable schema reference and manual bootstrap fallback.
+
+### Automated deployment (recommended)
+
+1. In GitHub, open **Settings → Secrets and variables → Actions**.
+2. Add these secrets:
+   - `SUPABASE_ACCESS_TOKEN` — a Supabase personal access token with access to the target project.
+   - `SUPABASE_DB_PASSWORD` — the database password for that target project.
+3. Open **Actions → Deploy CareerOS Supabase schema → Run workflow**.
+4. Enter the 20-character project reference as both `project_ref` and `confirm_project_ref`. The workflow validates the two values, previews pending migrations, then applies them.
+5. Review the workflow run and verify the remote migration history before configuring the app.
+
+The workflow is manual-only and does not run on every push. Use a fresh Supabase project for a clean redeployment. Do not run it against an unrelated project. Existing data is not copied by migrations; export and restore data separately if it must be retained.
+
+### Manual deployment
+
+Install the Supabase CLI, authenticate with `SUPABASE_ACCESS_TOKEN`, then run from the repository root:
+
+```bash
+supabase db push --dry-run --remote=<PROJECT_REF>
+supabase db push --yes --remote=<PROJECT_REF>
+supabase migration list --remote=<PROJECT_REF>
+```
+
+The CLI uses `SUPABASE_DB_PASSWORD` for database authentication. The dry run is read-only; the second command applies pending migrations. Never use `supabase db reset --remote` for production redeployment.
+
+## Initial database setup (manual fallback)
+
 ## 1. Run the database migration
 Open the Supabase project CareerOS → SQL Editor → New query. Paste and run [schema.sql](../supabase/schema.sql).
 
