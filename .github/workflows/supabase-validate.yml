@@ -33,11 +33,12 @@ jobs:
           version: 3.1.0
 
       - name: Start local Supabase stack
+        id: start_supabase
         run: supabase start
 
       - name: Rebuild database from the checked-in migration chain
         run: supabase db reset
 
       - name: Stop local Supabase stack
-        if: always()
+        if: always() && steps.start_supabase.outcome == 'success'
         run: supabase stop --no-backup
