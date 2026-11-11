@@ -1,0 +1,277 @@
+-- CareerOS user workspace storage
+-- Run in Supabase Dashboard > SQL Editor.
+-- All user data is isolated by auth.uid() using Row Level Security.
+
+create table if not exists public.user_workspaces (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  payload jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now(),
+  constraint user_workspaces_payload_object check (jsonb_typeof(payload) = 'object')
+);
+
+alter table public.user_workspaces enable row level security;
+
+drop policy if exists "Users can read their own workspace" on public.user_workspaces;
+create policy "Users can read their own workspace"
+  on public.user_workspaces for select
+  to authenticated
+  using ((select auth.uid()) = user_id);
+
+drop policy if exists "Users can create their own workspace" on public.user_workspaces;
+create policy "Users can create their own workspace"
+  on public.user_workspaces for insert
+  to authenticated
+  with check ((select auth.uid()) = user_id);
+
+drop policy if exists "Users can update their own workspace" on public.user_workspaces;
+create policy "Users can update their own workspace"
+  on public.user_workspaces for update
+  to authenticated
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
+
+revoke all on public.user_workspaces from public, anon, authenticated;
+grant select, insert, update on public.user_workspaces to authenticated;
+
+comment on table public.user_workspaces is
+  'Private per-user CareerOS workspace payload. RLS restricts access to the owning auth user.';
+
+
+-- Server-enforced Gemini quota. The browser cannot read or modify this table.
+create table if not exists public.ai_usage_daily (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  usage_date date not null default (now() at time zone 'utc')::date,
+  request_count integer not null default 0 check (request_count >= 0),
+  primary key (user_id, usage_date)
+);
+alter table public.ai_usage_daily enable row level security;
+drop policy if exists "No direct user access to AI usage counters" on public.ai_usage_daily;
+create policy "No direct user access to AI usage counters"
+  on public.ai_usage_daily
+  for all
+  to anon, authenticated
+  using (false)
+  with check (false);
+revoke all on public.ai_usage_daily from anon, authenticated;
+
+create or replace function public.consume_careeros_ai_quota(
+  p_user_id uuid,
+  p_daily_limit integer default 10
+) returns boolean
+language plpgsql
+security definer
+set search_path = pg_catalog, public, pg_temp
+as $$
+declare
+  new_count integer;
+begin
+  if p_user_id is null or p_daily_limit < 1 or p_daily_limit > 1000 then
+    return false;
+  end if;
+  insert into public.ai_usage_daily(user_id, usage_date, request_count)
+  values (p_user_id, (now() at time zone 'utc')::date, 1)
+  on conflict (user_id, usage_date)
+  do update set request_count = ai_usage_daily.request_count + 1
+  where ai_usage_daily.request_count < p_daily_limit
+  returning request_count into new_count;
+  return new_count is not null;
+end;
+$$;
+
+revoke all on function public.consume_careeros_ai_quota(uuid, integer) from public, anon, authenticated;
+grant execute on function public.consume_careeros_ai_quota(uuid, integer) to service_role;
+
+
+-- Reserve quota atomically and return the exact UTC usage date that was charged.
+create or replace function public.reserve_careeros_ai_quota(
+  p_user_id uuid,
+  p_daily_limit integer default 2
+) returns date
+language plpgsql
+security definer
+set search_path = pg_catalog, public, pg_temp
+as $quota$
+declare
+  charged_date date := (now() at time zone 'utc')::date;
+  new_count integer;
+begin
+  if p_user_id is null or p_daily_limit < 1 or p_daily_limit > 2 then
+    return null;
+  end if;
+
+  insert into public.ai_usage_daily(user_id, usage_date, request_count)
+  values (p_user_id, charged_date, 1)
+  on conflict (user_id, usage_date)
+  do update set request_count = ai_usage_daily.request_count + 1
+  where ai_usage_daily.request_count < p_daily_limit
+  returning request_count into new_count;
+
+  if new_count is null then
+    return null;
+  end if;
+  return charged_date;
+end;
+$quota$;
+
+-- Roll back one reservation after a provider/network/response failure.
+-- The exact date returned by reserve is supplied so midnight UTC cannot refund the wrong day.
+create or replace function public.release_careeros_ai_quota(
+  p_user_id uuid,
+  p_usage_date date
+) returns boolean
+language plpgsql
+security definer
+set search_path = pg_catalog, public, pg_temp
+as $quota$
+declare
+  remaining_count integer;
+begin
+  if p_user_id is null or p_usage_date is null then
+    return false;
+  end if;
+
+  update public.ai_usage_daily
+     set request_count = request_count - 1
+   where user_id = p_user_id
+     and usage_date = p_usage_date
+     and request_count > 0
+   returning request_count into remaining_count;
+
+  if remaining_count is null then
+    return false;
+  end if;
+
+  if remaining_count = 0 then
+    delete from public.ai_usage_daily
+     where user_id = p_user_id
+       and usage_date = p_usage_date
+       and request_count = 0;
+  end if;
+
+  return true;
+end;
+$quota$;
+
+revoke all on function public.reserve_careeros_ai_quota(uuid, integer) from public, anon, authenticated;
+revoke all on function public.release_careeros_ai_quota(uuid, date) from public, anon, authenticated;
+grant execute on function public.reserve_careeros_ai_quota(uuid, integer) to service_role;
+grant execute on function public.release_careeros_ai_quota(uuid, date) to service_role;
+
+-- Subscription metadata. Only the server-side service role may write it.
+create table if not exists public.subscriptions (
+  id bigint generated always as identity primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  razorpay_subscription_id text not null unique,
+  plan text not null check (plan in ('pro', 'career_plus')),
+  status text not null check (status in ('authenticated','active','halted','cancelled','completed','paused','pending','expired')),
+  current_start timestamptz,
+  current_end timestamptz,
+  cancel_at_cycle_end boolean not null default false,
+  cancellation_requested_at timestamptz,
+  provider_event_created_at bigint not null default 0,
+  updated_at timestamptz not null default now()
+);
+alter table public.subscriptions enable row level security;
+drop policy if exists "Users can read their own subscription" on public.subscriptions;
+create policy "Users can read their own subscription"
+  on public.subscriptions for select to authenticated
+  using ((select auth.uid()) = user_id);
+revoke all on public.subscriptions from public, anon, authenticated;
+revoke insert, update, delete on public.subscriptions from anon, authenticated;
+create index if not exists subscriptions_user_status_idx
+  on public.subscriptions (user_id, status, updated_at desc);
+
+alter table public.subscriptions
+  add column if not exists provider_event_created_at bigint not null default 0;
+
+-- Apply only newer provider events so delayed webhook deliveries cannot roll back subscription state.
+create or replace function public.upsert_careeros_subscription(
+  p_user_id uuid,
+  p_razorpay_subscription_id text,
+  p_plan text,
+  p_status text,
+  p_current_start timestamptz,
+  p_current_end timestamptz,
+  p_event_created_at bigint
+) returns boolean
+language plpgsql
+security definer
+set search_path = pg_catalog, public, pg_temp
+as $$
+declare
+  did_update boolean := false;
+begin
+  if p_user_id is null
+     or p_razorpay_subscription_id is null
+     or p_razorpay_subscription_id = ''
+     or p_plan not in ('pro','career_plus')
+     or p_status not in ('authenticated','active','halted','cancelled','completed','paused','pending','expired')
+     or p_event_created_at is null
+     or p_event_created_at < 0 then
+    return false;
+  end if;
+
+  insert into public.subscriptions (
+    user_id, razorpay_subscription_id, plan, status,
+    current_start, current_end, provider_event_created_at,
+    cancel_at_cycle_end, cancellation_requested_at, updated_at
+  ) values (
+    p_user_id, p_razorpay_subscription_id, p_plan, p_status,
+    p_current_start, p_current_end, p_event_created_at,
+    false, null, now()
+  )
+  on conflict (razorpay_subscription_id) do update set
+    user_id = excluded.user_id,
+    plan = excluded.plan,
+    status = excluded.status,
+    current_start = excluded.current_start,
+    current_end = excluded.current_end,
+    provider_event_created_at = excluded.provider_event_created_at,
+    cancel_at_cycle_end = case
+      when excluded.status = 'cancelled' then false
+      else public.subscriptions.cancel_at_cycle_end
+    end,
+    cancellation_requested_at = case
+      when excluded.status = 'cancelled' then null
+      else public.subscriptions.cancellation_requested_at
+    end,
+    updated_at = now()
+  where excluded.provider_event_created_at > public.subscriptions.provider_event_created_at
+     or (excluded.provider_event_created_at = public.subscriptions.provider_event_created_at and excluded.status <> public.subscriptions.status)
+  returning true into did_update;
+
+  return coalesce(did_update, false);
+end;
+$$;
+
+revoke all on function public.upsert_careeros_subscription(uuid,text,text,text,timestamptz,timestamptz,bigint) from public, anon, authenticated;
+grant execute on function public.upsert_careeros_subscription(uuid,text,text,text,timestamptz,timestamptz,bigint) to service_role;
+
+-- Subscription cancellation scheduling metadata for self-service billing management.
+alter table public.subscriptions add column if not exists cancel_at_cycle_end boolean not null default false;
+alter table public.subscriptions add column if not exists cancellation_requested_at timestamptz;
+
+
+-- Curated interview question bank. Access is exclusively through server-side API routes.
+create table if not exists public.interview_questions (
+  id uuid primary key default gen_random_uuid(),
+  round text not null check (round in ('aptitude','coding','technical','system_design','case_study','behavioral','hr')),
+  question text not null check (char_length(question) between 20 and 2000),
+  rubric text not null check (char_length(rubric) between 10 and 2000),
+  difficulty text not null default 'intermediate' check (difficulty in ('beginner','intermediate','advanced')),
+  is_active boolean not null default true,
+  created_by uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+alter table public.interview_questions enable row level security;
+drop policy if exists "No direct client access to interview questions" on public.interview_questions;
+create policy "No direct client access to interview questions"
+  on public.interview_questions for all to anon, authenticated
+  using (false) with check (false);
+revoke all on public.interview_questions from anon, authenticated;
+grant select, insert, update, delete on public.interview_questions to service_role;
+create index if not exists interview_questions_active_created_idx
+  on public.interview_questions(is_active, created_at desc);
+comment on table public.interview_questions is
+  'CareerOS curated interview question bank. All access is mediated by authenticated server API routes; no client role can query this table directly.';
