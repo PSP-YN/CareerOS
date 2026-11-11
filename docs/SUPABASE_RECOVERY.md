@@ -42,11 +42,12 @@ Do not run `supabase db reset --remote` against production. It is destructive. U
 
 ## GitHub Actions deployment
 
-The workflow `.github/workflows/supabase-deploy.yml` is manual-only and requires a deliberate checkbox confirmation. Configure these repository Actions secrets:
+The workflow `.github/workflows/supabase-deploy.yml` is manual-only and requires the exact project reference to be entered twice. Configure these repository Actions secrets:
 
 - `SUPABASE_ACCESS_TOKEN`: Supabase personal access token for the deployment identity.
-- `SUPABASE_PROJECT_REF`: target project ref.
 - `SUPABASE_DB_PASSWORD`: target database password.
+
+At workflow dispatch, enter the exact 20-character project reference twice (`project_ref` and `confirm_project_ref`). The workflow stops unless the values match. The project ref is deliberately an explicit run input rather than a long-lived secret.
 
 Use a GitHub Environment named `production` with required reviewers before enabling this workflow for a production database. Do not put service-role keys or provider secrets in this workflow; it only applies SQL migrations.
 
